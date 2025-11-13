@@ -5,7 +5,7 @@
 // ===========================================================
 /* global Office, Excel, fetch */
 
-const API_BASE = "https://excelwizprov1-backend.onrender.com";
+const API_BASE = "https://excelwizpro-finalapi.onrender.com";   // ✅ PATCHED BACKEND URL
 const VERSION = "10.0.1";
 console.log(`🧠 ExcelWizPro v${VERSION} taskpane.js loaded`);
 
@@ -25,11 +25,9 @@ window.addEventListener("error", (e) => {
 // AbortSignal.timeout() fallback for older WebView2
 // -----------------------------------------------------------
 function timeoutSignal(ms) {
-  // Preferred (newer WebView2 / modern browsers)
   if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
     return AbortSignal.timeout(ms);
   }
-  // Fallback: manual AbortController
   const ctrl = new AbortController();
   setTimeout(() => ctrl.abort(), ms);
   return ctrl.signal;
@@ -65,17 +63,15 @@ function getOfficeDiagnostics() {
 }
 
 // ===========================================================
-// 🟢 ExcelWizPro Safe Boot Coordinator (more tolerant host detect)
+// 🟢 ExcelWizPro Safe Boot Coordinator
 // ===========================================================
 (async function bootExcelWizPro() {
   console.log("🚀 Booting ExcelWizPro...");
 
-  // Wait for Office.js runtime (handles both desktop & web)
   await new Promise((resolve) => {
     try { Office.onReady(resolve); } catch { resolve(); }
   });
 
-  // Retry until Excel-like host detected (covers rare "Workbook" host string)
   for (let i = 1; i <= 10; i++) {
     const host = Office.context?.host;
     if (host && /Excel|Workbook/i.test(String(host))) {
@@ -92,10 +88,8 @@ function getOfficeDiagnostics() {
 
   showToast("🔄 Initializing ExcelWizPro…");
 
-  // Backend warm-up (non-blocking)
   warmUpBackend().catch((err) => console.warn("⚠️ Backend warm-up failed:", err));
 
-  // Ping workbook until it responds
   try {
     await waitForWorkbookReady();
     await ensureExcelIsReady();
@@ -103,7 +97,6 @@ function getOfficeDiagnostics() {
     console.warn("⚠️ Excel context slow to respond:", err);
   }
 
-  // Initialize add-in core
   try {
     console.table(getOfficeDiagnostics());
     await initExcelWizPro();
@@ -138,7 +131,7 @@ async function waitForWorkbookReady(maxTries = 10, delayMs = 1000) {
 }
 
 // ===========================================================
-// 🧱 Reliable Excel context guard (prevents RichApi.GeneralException)
+// 🧱 Robust Excel context guard
 // ===========================================================
 async function ensureExcelIsReady(maxTries = 12, delayMs = 1000) {
   for (let i = 1; i <= maxTries; i++) {
@@ -147,7 +140,7 @@ async function ensureExcelIsReady(maxTries = 12, delayMs = 1000) {
         const app = ctx.workbook.application;
         app.load("calculationMode");
         await ctx.sync();
-        app.calculationMode = app.calculationMode; // noop roundtrip
+        app.calculationMode = app.calculationMode;
         await ctx.sync();
       });
       console.log(`✅ Excel context active (attempt ${i})`);
@@ -162,7 +155,7 @@ async function ensureExcelIsReady(maxTries = 12, delayMs = 1000) {
 }
 
 // ===========================================================
-// 🩵 Backend warm-up (uses safeFetch + graceful UI states)
+// Backend warm-up
 // ===========================================================
 async function warmUpBackend(max = 10, baseDelay = 2500) {
   const statusDiv = document.createElement("div");
@@ -208,7 +201,7 @@ async function warmUpBackend(max = 10, baseDelay = 2500) {
 }
 
 // ===========================================================
-// 🧠 ExcelWizPro Core Initialization
+// ExcelWizPro Core Initialization
 // ===========================================================
 async function initExcelWizPro() {
   console.log("🚀 Initializing ExcelWizPro environment…");
@@ -224,7 +217,7 @@ async function initExcelWizPro() {
 }
 
 // ===========================================================
-// 🧰 Excel context check
+// Excel context check
 // ===========================================================
 async function ensureExcelContext(retries = 3) {
   for (let i = 1; i <= retries; i++) {
@@ -245,7 +238,7 @@ async function ensureExcelContext(retries = 3) {
 }
 
 // ===========================================================
-// 🧩 UI Handlers + Safe Excel Logic
+// UI + Excel logic
 // ===========================================================
 function registerUIHandlers() {
   console.log("🔧 Registering UI controls…");
@@ -304,7 +297,7 @@ function registerUIHandlers() {
 }
 
 // ===========================================================
-// 🔁 Backend call with retry (uses safeFetch)
+// Backend call with retry
 // ===========================================================
 async function generateFormulaWithRetry(payload, maxRetries = 3) {
   let lastError = null;
@@ -341,7 +334,7 @@ async function generateFormulaWithRetry(payload, maxRetries = 3) {
 }
 
 // ===========================================================
-// 🔒 Safe Excel wrapper
+// Safe Excel wrapper
 // ===========================================================
 async function safeExcelRun(cb) {
   try {
@@ -362,7 +355,7 @@ async function safeExcelRun(cb) {
 }
 
 // ===========================================================
-// 🧱 Helpers
+// Helpers
 // ===========================================================
 async function buildColumnMap() {
   return safeExcelRun(async (context) => {
@@ -480,3 +473,4 @@ function getEl(id) {
 function delay(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
+
