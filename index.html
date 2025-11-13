@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExcelWizPro – AI Formula Assistant</title>
+
+  <style>
+    :root {
+      --primary: #0078d4;
+      --primary-hover: #106ebe;
+      --text: #222;
+      --bg: #fafafa;
+      --card-bg: #ffffff;
+      --radius: 12px;
+      --font: "Segoe UI", system-ui, sans-serif;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      max-width: 520px;
+      padding: 2rem;
+      text-align: center;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    h1 {
+      color: var(--primary);
+      font-size: 1.8rem;
+      margin-bottom: 0.25rem;
+    }
+
+    p {
+      font-size: 1rem;
+      line-height: 1.6;
+      margin: 0.5rem 0;
+    }
+
+    a.button {
+      display: inline-block;
+      background: var(--primary);
+      color: #fff;
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius);
+      text-decoration: none;
+      font-weight: 500;
+      margin-top: 1.2rem;
+      transition: background 0.2s ease;
+    }
+
+    a.button:hover {
+      background: var(--primary-hover);
+    }
+
+    footer {
+      margin-top: 2rem;
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="assets/icon-64.png" alt="ExcelWizPro Logo" width="64" height="64" />
+    <h1>ExcelWizPro</h1>
+    <p>Welcome to the ExcelWizPro AI Formula Assistant!</p>
+    <p>This page confirms your add-in deployment is live and connected.</p>
+
+    <a href="taskpane.html" class="button">Open Taskpane</a>
+  </div>
+
+  <footer>
+    &copy; 2025 ExcelWizPro — All rights reserved.
+  </footer>
+</body>
+</html>
