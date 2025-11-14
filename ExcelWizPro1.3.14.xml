@@ -17,7 +17,11 @@
   <SupportUrl DefaultValue="https://excelwizpro.github.io/excelwizpro-final/"/>
 
   <!-- REQUIRED (must exist even if empty) -->
-  <Requirements></Requirements>
+  <Requirements>
+    <Sets DefaultMinVersion="1.1">
+        <Set Name="Office.js" />
+    </Sets>
+</Requirements>
 
   <Hosts>
     <Host Name="Workbook"/>
@@ -95,6 +99,7 @@
     </Resources>
   </VersionOverrides>
 </OfficeApp>
+
 
 
 
