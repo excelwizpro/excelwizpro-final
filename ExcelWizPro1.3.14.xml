@@ -17,7 +17,6 @@
   <HighResolutionIconUrl DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-64.png"/>
   <SupportUrl DefaultValue="https://excelwizpro.github.io/excelwizpro-final/"/>
 
-  <!-- Hosts MUST come before Requirements -->
   <Hosts>
     <Host Name="Workbook"/>
   </Hosts>
@@ -48,11 +47,9 @@
             <LearnMoreUrl resid="GetStarted.LearnMoreUrl"/>
           </GetStarted>
 
-          <!-- FIXED: Only ExtensionPoint allowed -->
           <ExtensionPoint xsi:type="PrimaryCommandSurface">
 
             <OfficeTab id="TabHome">
-
               <Group id="ExcelWizProGroup">
 
                 <Label resid="TaskpaneButton.Label"/>
@@ -83,7 +80,6 @@
                 </Control>
 
               </Group>
-
             </OfficeTab>
 
           </ExtensionPoint>
@@ -121,4 +117,5 @@
   </VersionOverrides>
 
 </OfficeApp>
+
 
