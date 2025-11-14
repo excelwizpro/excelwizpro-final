@@ -16,6 +16,9 @@
   <HighResolutionIconUrl DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-64.png"/>
   <SupportUrl DefaultValue="https://excelwizpro.github.io/excelwizpro-final/"/>
 
+  <!-- REQUIRED (must exist even if empty) -->
+  <Requirements></Requirements>
+
   <Hosts>
     <Host Name="Workbook"/>
   </Hosts>
@@ -92,6 +95,7 @@
     </Resources>
   </VersionOverrides>
 </OfficeApp>
+
 
 
 
