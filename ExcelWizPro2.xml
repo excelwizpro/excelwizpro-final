@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
-           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
-           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
-           xsi:type="TaskPaneApp">
+<OfficeApp
+    xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+    xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+    xsi:type="TaskPaneApp">
 
-  <Id>fbd9c8a8-b83a-4160-ba2f-774166e1d150</Id>
-  <Version>1.3.15.0</Version>
+  <Id>e0477cf2-e76d-4327-ae6a-8ac91783b03b</Id>
+  <Version>1.3.16.0</Version>
   <ProviderName>ExcelWizPro</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
 
@@ -27,26 +28,18 @@
     </Sets>
   </Requirements>
 
-  <!-- REQUIRED FOR CENTRALIZED DEPLOYMENT -->
-  <FormSettings>
-    <Form xsi:type="Taskpane">
-      <DesktopSettings>
-        <SourceLocation DefaultValue="https://excelwizpro.github.io/excelwizpro-final/taskpane.html"/>
-      </DesktopSettings>
-    </Form>
-  </FormSettings>
-
   <DefaultSettings>
     <SourceLocation DefaultValue="https://excelwizpro.github.io/excelwizpro-final/taskpane.html"/>
   </DefaultSettings>
 
   <Permissions>ReadWriteDocument</Permissions>
 
-  <VersionOverrides xsi:type="VersionOverridesV1_0"
-                    xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides">
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+                    xsi:type="VersionOverridesV1_0">
 
     <Hosts>
       <Host xsi:type="Workbook">
+
         <DesktopFormFactor>
 
           <GetStarted>
@@ -57,24 +50,28 @@
 
           <ExtensionPoint xsi:type="PrimaryCommandSurface">
             <OfficeTab id="TabHome">
-              <Group id="ExcelWizProGroup">
-                <Label resid="TaskpaneButton.Label"/>
+
+              <Group id="ExcelWizPro.Group">
+                <Label resid="Button.Label"/>
+
                 <Icon>
-                  <bt:Image size="16" resid="TaskpaneButton.Icon16"/>
-                  <bt:Image size="32" resid="TaskpaneButton.Icon32"/>
-                  <bt:Image size="64" resid="TaskpaneButton.Icon64"/>
+                  <bt:Image size="16" resid="Icon16"/>
+                  <bt:Image size="32" resid="Icon32"/>
+                  <bt:Image size="64" resid="Icon64"/>
                 </Icon>
 
-                <Control xsi:type="Button" id="TaskpaneButton">
-                  <Label resid="TaskpaneButton.Label"/>
+                <Control xsi:type="Button" id="ExcelWizPro.Button">
+                  <Label resid="Button.Label"/>
+
                   <Supertip>
-                    <Title resid="TaskpaneButton.Label"/>
-                    <Description resid="TaskpaneButton.Tooltip"/>
+                    <Title resid="Button.Label"/>
+                    <Description resid="Button.Tooltip"/>
                   </Supertip>
+
                   <Icon>
-                    <bt:Image size="16" resid="TaskpaneButton.Icon16"/>
-                    <bt:Image size="32" resid="TaskpaneButton.Icon32"/>
-                    <bt:Image size="64" resid="TaskpaneButton.Icon64"/>
+                    <bt:Image size="16" resid="Icon16"/>
+                    <bt:Image size="32" resid="Icon32"/>
+                    <bt:Image size="64" resid="Icon64"/>
                   </Icon>
 
                   <Action xsi:type="ShowTaskpane">
@@ -83,18 +80,21 @@
                 </Control>
 
               </Group>
+
             </OfficeTab>
           </ExtensionPoint>
 
         </DesktopFormFactor>
+
       </Host>
     </Hosts>
 
     <Resources>
+
       <bt:Images>
-        <bt:Image id="TaskpaneButton.Icon16" DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-16.png"/>
-        <bt:Image id="TaskpaneButton.Icon32" DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-32.png"/>
-        <bt:Image id="TaskpaneButton.Icon64" DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-64.png"/>
+        <bt:Image id="Icon16" DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-16.png"/>
+        <bt:Image id="Icon32" DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-32.png"/>
+        <bt:Image id="Icon64" DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-64.png"/>
       </bt:Images>
 
       <bt:Urls>
@@ -103,17 +103,17 @@
       </bt:Urls>
 
       <bt:ShortStrings>
-        <bt:String id="TaskpaneButton.Label" DefaultValue="ExcelWizPro"/>
+        <bt:String id="Button.Label" DefaultValue="ExcelWizPro"/>
         <bt:String id="GetStarted.Title" DefaultValue="ExcelWizPro Add-In"/>
       </bt:ShortStrings>
 
       <bt:LongStrings>
-        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Open ExcelWizPro AI formula assistant"/>
+        <bt:String id="Button.Tooltip" DefaultValue="Open ExcelWizPro AI formula assistant"/>
         <bt:String id="GetStarted.Description" DefaultValue="Use ExcelWizPro to create intelligent Excel formulas automatically."/>
       </bt:LongStrings>
+
     </Resources>
 
   </VersionOverrides>
 
 </OfficeApp>
-
