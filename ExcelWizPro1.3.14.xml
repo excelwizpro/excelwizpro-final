@@ -5,7 +5,7 @@
            xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
            xsi:type="TaskPaneApp">
 
-  <Id>133ec45f-ab70-4a7a-b44e-8acf0aaab23e</Id>
+  <Id>e7c65bc0-a57f-441e-9a6e-1d8f21bda9cf</Id>
   <Version>1.3.14.0</Version>
   <ProviderName>ExcelWizPro</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
@@ -117,5 +117,6 @@
   </VersionOverrides>
 
 </OfficeApp>
+
 
 
