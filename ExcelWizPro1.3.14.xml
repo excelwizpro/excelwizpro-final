@@ -9,6 +9,7 @@
   <Version>1.3.14.0</Version>
   <ProviderName>ExcelWizPro</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
+
   <DisplayName DefaultValue="ExcelWizPro"/>
   <Description DefaultValue="AI-powered Excel formula generator"/>
 
@@ -16,12 +17,12 @@
   <HighResolutionIconUrl DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-64.png"/>
   <SupportUrl DefaultValue="https://excelwizpro.github.io/excelwizpro-final/"/>
 
-  <!-- REQUIRED (must exist even if empty) -->
-<Requirements>
+  <!-- Required -->
+  <Requirements>
     <Sets>
-        <Set Name="ExcelApi" MinVersion="1.1"/>
+      <Set Name="ExcelApi" MinVersion="1.1"/>
     </Sets>
-</Requirements>
+  </Requirements>
 
   <Hosts>
     <Host Name="Workbook"/>
@@ -33,49 +34,66 @@
 
   <Permissions>ReadWriteDocument</Permissions>
 
+  <!-- Version Overrides -->
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+
     <Hosts>
       <Host xsi:type="Workbook">
+
         <DesktopFormFactor>
+
           <GetStarted>
             <Title resid="GetStarted.Title"/>
             <Description resid="GetStarted.Description"/>
             <LearnMoreUrl resid="GetStarted.LearnMoreUrl"/>
           </GetStarted>
 
-          <ExtensionPoint xsi:type="PrimaryCommandSurface">
-            <OfficeTab id="TabHome">
-              <Group id="ExcelWizProGroup">
-                <Label resid="TaskpaneButton.Label"/>
-                <Icon>
-                  <bt:Image size="16" resid="TaskpaneButton.Icon16"/>
-                  <bt:Image size="32" resid="TaskpaneButton.Icon32"/>
-                  <bt:Image size="64" resid="TaskpaneButton.Icon64"/>
-                </Icon>
+          <ExtensionPoints>
+            <ExtensionPoint xsi:type="PrimaryCommandSurface">
 
-                <Control xsi:type="Button" id="TaskpaneButton">
+              <OfficeTab id="TabHome">
+                <Group id="ExcelWizProGroup">
+
                   <Label resid="TaskpaneButton.Label"/>
-                  <Supertip>
-                    <Title resid="TaskpaneButton.Label"/>
-                    <Description resid="TaskpaneButton.Tooltip"/>
-                  </Supertip>
+
                   <Icon>
                     <bt:Image size="16" resid="TaskpaneButton.Icon16"/>
                     <bt:Image size="32" resid="TaskpaneButton.Icon32"/>
                     <bt:Image size="64" resid="TaskpaneButton.Icon64"/>
                   </Icon>
-                  <Action xsi:type="ShowTaskpane">
-                    <SourceLocation resid="Taskpane.Url"/>
-                  </Action>
-                </Control>
-              </Group>
-            </OfficeTab>
-          </ExtensionPoint>
+
+                  <Control xsi:type="Button" id="TaskpaneButton">
+                    <Label resid="TaskpaneButton.Label"/>
+
+                    <Supertip>
+                      <Title resid="TaskpaneButton.Label"/>
+                      <Description resid="TaskpaneButton.Tooltip"/>
+                    </Supertip>
+
+                    <Icon>
+                      <bt:Image size="16" resid="TaskpaneButton.Icon16"/>
+                      <bt:Image size="32" resid="TaskpaneButton.Icon32"/>
+                      <bt:Image size="64" resid="TaskpaneButton.Icon64"/>
+                    </Icon>
+
+                    <Action xsi:type="ShowTaskpane">
+                      <SourceLocation resid="Taskpane.Url"/>
+                    </Action>
+                  </Control>
+
+                </Group>
+              </OfficeTab>
+
+            </ExtensionPoint>
+          </ExtensionPoints>
+
         </DesktopFormFactor>
+
       </Host>
     </Hosts>
 
     <Resources>
+
       <bt:Images>
         <bt:Image id="TaskpaneButton.Icon16" DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-16.png"/>
         <bt:Image id="TaskpaneButton.Icon32" DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-32.png"/>
@@ -96,13 +114,8 @@
         <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Open ExcelWizPro AI formula assistant"/>
         <bt:String id="GetStarted.Description" DefaultValue="Use ExcelWizPro to create intelligent Excel formulas automatically."/>
       </bt:LongStrings>
+
     </Resources>
+
   </VersionOverrides>
 </OfficeApp>
-
-
-
-
-
-
-
