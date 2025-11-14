@@ -27,6 +27,11 @@
     </Sets>
   </Requirements>
 
+  <!-- REQUIRED FOR DEPLOYMENT -->
+  <FormSettings>
+    <Form xsi:type="ItemRead"/>
+  </FormSettings>
+
   <DefaultSettings>
     <SourceLocation DefaultValue="https://excelwizpro.github.io/excelwizpro-final/taskpane.html"/>
   </DefaultSettings>
@@ -38,7 +43,6 @@
 
     <Hosts>
       <Host xsi:type="Workbook">
-
         <DesktopFormFactor>
 
           <GetStarted>
@@ -48,10 +52,8 @@
           </GetStarted>
 
           <ExtensionPoint xsi:type="PrimaryCommandSurface">
-
             <OfficeTab id="TabHome">
               <Group id="ExcelWizProGroup">
-
                 <Label resid="TaskpaneButton.Label"/>
 
                 <Icon>
@@ -81,16 +83,13 @@
 
               </Group>
             </OfficeTab>
-
           </ExtensionPoint>
 
         </DesktopFormFactor>
-
       </Host>
     </Hosts>
 
     <Resources>
-
       <bt:Images>
         <bt:Image id="TaskpaneButton.Icon16" DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-16.png"/>
         <bt:Image id="TaskpaneButton.Icon32" DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-32.png"/>
@@ -111,12 +110,11 @@
         <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Open ExcelWizPro AI formula assistant"/>
         <bt:String id="GetStarted.Description" DefaultValue="Use ExcelWizPro to create intelligent Excel formulas automatically."/>
       </bt:LongStrings>
-
     </Resources>
 
   </VersionOverrides>
-
 </OfficeApp>
+
 
 
 
