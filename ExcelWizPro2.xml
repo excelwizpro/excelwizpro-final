@@ -27,9 +27,13 @@
     </Sets>
   </Requirements>
 
-  <!-- REQUIRED FOR DEPLOYMENT -->
+  <!-- REQUIRED FOR CENTRALIZED DEPLOYMENT -->
   <FormSettings>
-    <Form xsi:type="ItemRead"/>
+    <Form xsi:type="Taskpane">
+      <DesktopSettings>
+        <SourceLocation DefaultValue="https://excelwizpro.github.io/excelwizpro-final/taskpane.html"/>
+      </DesktopSettings>
+    </Form>
   </FormSettings>
 
   <DefaultSettings>
@@ -38,8 +42,8 @@
 
   <Permissions>ReadWriteDocument</Permissions>
 
-  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
-                    xsi:type="VersionOverridesV1_0">
+  <VersionOverrides xsi:type="VersionOverridesV1_0"
+                    xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides">
 
     <Hosts>
       <Host xsi:type="Workbook">
@@ -55,7 +59,6 @@
             <OfficeTab id="TabHome">
               <Group id="ExcelWizProGroup">
                 <Label resid="TaskpaneButton.Label"/>
-
                 <Icon>
                   <bt:Image size="16" resid="TaskpaneButton.Icon16"/>
                   <bt:Image size="32" resid="TaskpaneButton.Icon32"/>
@@ -64,12 +67,10 @@
 
                 <Control xsi:type="Button" id="TaskpaneButton">
                   <Label resid="TaskpaneButton.Label"/>
-
                   <Supertip>
                     <Title resid="TaskpaneButton.Label"/>
                     <Description resid="TaskpaneButton.Tooltip"/>
                   </Supertip>
-
                   <Icon>
                     <bt:Image size="16" resid="TaskpaneButton.Icon16"/>
                     <bt:Image size="32" resid="TaskpaneButton.Icon32"/>
@@ -113,9 +114,5 @@
     </Resources>
 
   </VersionOverrides>
+
 </OfficeApp>
-
-
-
-
-
