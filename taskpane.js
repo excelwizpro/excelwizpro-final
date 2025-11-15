@@ -1,252 +1,315 @@
 // ===========================================================
-// ExcelWizPro Taskpane Script — v10.0.1 (Stable Production Build)
-// Safe for WebView2 + Office Add-in Store deployment
+// ExcelWizPro Taskpane Script — Production Build (Option A)
+// - Safe Office/Excel startup for deployed add-ins
+// - Calls backend /generate for all formula logic
+// - Clean UI wiring, minimal but useful logging
 // ===========================================================
-
 /* global Office, Excel, fetch */
 
 const API_BASE = "https://excelwizpro-finalapi.onrender.com";
-const VERSION = "10.0.1";
+const VERSION = "11.0.0";
 
-console.log(`🧠 ExcelWizPro v${VERSION} — loading taskpane.js`);
+console.log(`🧠 ExcelWizPro v${VERSION} taskpane.js loaded`);
+
+// Optional: better Office error logging
+if (Office && Office.config) {
+  Office.config = { extendedErrorLogging: true };
+}
 
 // -----------------------------------------------------------
-// SAFETY: prevent WebView2 from crashing on early JS errors
+// Global safety: don't let errors silently kill the WebView
 // -----------------------------------------------------------
 window.addEventListener("error", (e) => {
-  console.warn("JS Error:", e.message);
+  console.warn("Window error:", e.message || e.error);
 });
 window.addEventListener("unhandledrejection", (e) => {
-  console.warn("Promise Rejection:", e.reason);
+  console.warn("Unhandled promise rejection:", e.reason);
 });
 
 // -----------------------------------------------------------
-// Utility: delay
+// Basic helpers
 // -----------------------------------------------------------
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getEl(id) {
+  const el = document.getElementById(id);
+  if (!el) throw new Error(`Missing element: #${id}`);
+  return el;
+}
+
+// Toast UI (uses .toast class from your CSS)
+function showToast(msg) {
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2600);
+}
 
 // -----------------------------------------------------------
-// SAFETY: Fetch wrapper (timeout + offline protection)
+// Abort + safeFetch for offline / timeouts
 // -----------------------------------------------------------
-function safeFetch(url, opts = {}) {
-  const timeout = opts.timeout ?? 8000;
+function timeoutSignal(ms) {
+  if (typeof AbortController === "undefined") return undefined;
+  const ctrl = new AbortController();
+  setTimeout(() => ctrl.abort(), ms);
+  return ctrl.signal;
+}
 
+async function safeFetch(url, { timeout = 8000, ...opts } = {}) {
   if (!navigator.onLine) {
     const err = new Error("offline");
     err.code = "OFFLINE";
     throw err;
   }
 
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeout);
-
-  return fetch(url, {
-    ...opts,
-    signal: ctrl.signal,
-  }).finally(() => clearTimeout(timer));
+  const signal = opts.signal || timeoutSignal(timeout);
+  return fetch(url, { ...opts, signal });
 }
 
 // -----------------------------------------------------------
-// STARTUP SEQUENCE — PRODUCTION SAFE
+// Diagnostics
 // -----------------------------------------------------------
-Office.onReady(async (info) => {
-  console.log("📘 Office.onReady fired:", info);
-
-  // prevent early Excel context access
-  await delay(50);
-
-  if (info.host !== Office.HostType.Excel) {
-    console.warn("Not Excel — stopping initialization.");
-    return;
-  }
-
-  // now safe to run Excel calls
-  await safeInit();
-});
-
-// -----------------------------------------------------------
-// MAIN STARTUP WRAPPER
-// -----------------------------------------------------------
-async function safeInit() {
+function getOfficeDiagnostics() {
   try {
-    showToast("🔄 Loading ExcelWizPro…");
-
-    await waitForExcelApi();
-    await warmBackend();
-    await initializeUI();
-
-    showToast("✅ ExcelWizPro Ready");
-    console.log("🟢 ExcelWizPro initialization complete.");
-  } catch (err) {
-    console.error("❌ Fatal startup error:", err);
-    showToast("❌ Excel failed to initialize.");
+    return {
+      host: Office.context?.host || "unknown",
+      platform: Office.context?.diagnostics?.platform || "unknown",
+      version: Office.context?.diagnostics?.version || "unknown",
+      build: Office.context?.diagnostics?.build || "n/a"
+    };
+  } catch {
+    return { host: "unknown", platform: "unknown", version: "unknown" };
   }
 }
 
-// -----------------------------------------------------------
-// STEP 1 — Confirm Excel API is responsive
-// -----------------------------------------------------------
+// ===========================================================
+// SAFE EXCEL BOOT SEQUENCE
+// ===========================================================
+
+// Step 1 — wait for Office.js / host
+function officeReady() {
+  return new Promise((resolve) => {
+    if (window.Office && Office.onReady) {
+      Office.onReady((info) => {
+        console.log("📘 Office.onReady:", info);
+        resolve(info);
+      });
+    } else {
+      console.log("⏳ Waiting for Office.js injection…");
+      let tries = 0;
+      const timer = setInterval(() => {
+        tries++;
+        if (window.Office && Office.onReady) {
+          clearInterval(timer);
+          Office.onReady((info) => {
+            console.log("📘 Office.onReady (delayed):", info);
+            resolve(info);
+          });
+        }
+        if (tries > 40) {
+          clearInterval(timer);
+          console.warn("⚠️ Office.js never reported ready — fallback mode.");
+          resolve({ host: "unknown" });
+        }
+      }, 500);
+    }
+  });
+}
+
+// Step 2 — ensure we're really in Excel
+async function ensureExcelHost(info) {
+  if (!info || info.host !== Office.HostType.Excel) {
+    console.warn("⚠️ Not running inside Excel host:", info && info.host);
+    showToast("⚠️ Excel host not detected.");
+    return false;
+  }
+  console.log("🟢 Excel host confirmed.");
+  return true;
+}
+
+// Step 3 — wait for Excel API to be usable
 async function waitForExcelApi() {
-  for (let i = 1; i <= 10; i++) {
+  for (let i = 1; i <= 15; i++) {
     try {
+      console.log(`🔧 Checking Excel API… (${i}/15)`);
       await Excel.run(async (ctx) => {
-        const app = ctx.workbook.application;
-        app.load("calculationMode");
+        ctx.workbook.properties.load("title");
         await ctx.sync();
       });
-
-      console.log("✅ Excel is ready on try", i);
-      return;
-    } catch (err) {
-      console.warn(`⏳ Excel API not ready (attempt ${i})`);
-      await delay(300 + i * 150);
+      console.log("🟢 Excel API ready.");
+      return true;
+    } catch (e) {
+      await delay(500 + i * 100);
     }
   }
-
-  throw new Error("Excel failed to respond after 10 attempts");
+  console.error("❌ Excel API did not become ready.");
+  showToast("⚠️ Excel still loading — reopen the add-in.");
+  return false;
 }
 
-// -----------------------------------------------------------
-// STEP 2 — Wake backend
-// -----------------------------------------------------------
-async function warmBackend() {
-  for (let i = 1; i <= 5; i++) {
-    try {
-      const res = await safeFetch(`${API_BASE}/health`, {
-        cache: "no-store",
-        timeout: 3000,
-      });
-      if (res.ok) {
-        console.log("✅ Backend awake");
-        return;
+// ===========================================================
+// BACKEND WARM-UP
+// ===========================================================
+async function warmUpBackend(max = 5, baseDelay = 2000) {
+  try {
+    const statusDiv = document.createElement("div");
+    Object.assign(statusDiv.style, {
+      padding: "6px",
+      marginBottom: "8px",
+      borderRadius: "6px",
+      fontSize: "0.9rem",
+      fontWeight: "500",
+      textAlign: "center"
+    });
+    document.querySelector("main.container")?.prepend(statusDiv);
+
+    for (let i = 1; i <= max; i++) {
+      try {
+        const res = await safeFetch(`${API_BASE}/health`, {
+          cache: "no-store",
+          timeout: 3000
+        });
+        if (res.ok) {
+          statusDiv.textContent = "✅ Backend awake";
+          statusDiv.style.backgroundColor = "#e6ffed";
+          statusDiv.style.color = "#0f7b0f";
+          setTimeout(() => statusDiv.remove(), 2200);
+          console.log("✅ Backend warm-up complete");
+          return;
+        }
+        throw new Error(`HTTP ${res.status}`);
+      } catch (err) {
+        const offline = err.code === "OFFLINE";
+        statusDiv.textContent = offline
+          ? "📴 Offline — reconnect to use ExcelWizPro"
+          : `⏳ Waking backend… (${i}/${max})`;
+        statusDiv.style.backgroundColor = "#fff4ce";
+        statusDiv.style.color = "#986f00";
+        await delay(baseDelay * (1 + Math.random()));
       }
-    } catch (err) {
-      console.warn(`Backend warm-up failed (try ${i})`);
     }
-    await delay(500 + i * 200);
+
+    statusDiv.textContent = "❌ Cannot reach backend";
+    statusDiv.style.backgroundColor = "#fde7e9";
+    statusDiv.style.color = "#d13438";
+  } catch (e) {
+    console.warn("Warm-up error:", e);
   }
-  console.warn("⚠️ Backend unreachable — continuing offline mode");
 }
 
-// -----------------------------------------------------------
-// STEP 3 — Build UI + event handlers
-// -----------------------------------------------------------
-async function initializeUI() {
-  console.log("🔧 Initializing UI handlers");
-
-  const sheetSelect = get("sheetSelect");
-  const queryInput = get("query");
-  const output = get("output");
-  const generateBtn = get("generateBtn");
-  const clearBtn = get("clearBtn");
-
-  await refreshSheets(sheetSelect);
-
-  let columnMapCache = "";
-
-  // generate
-  generateBtn.addEventListener("click", async () => {
-    const q = queryInput.value.trim();
-    if (!q) return showToast("⚠️ Enter a formula description");
-
-    output.textContent = "⏳ Generating formula…";
-
-    if (!columnMapCache) {
-      columnMapCache = await buildColumnMap();
-    }
-
-    const payload = {
-      query: q,
-      columnMap: columnMapCache,
-    };
-
-    try {
-      const formula = await callGenerator(payload);
-      output.textContent = formula;
-      attachInsertButton(output, formula);
-    } catch (err) {
-      output.textContent = "❌ Failed to generate formula";
-      console.error(err);
-    }
-  });
-
-  // clear
-  clearBtn.addEventListener("click", () => {
-    queryInput.value = "";
-    output.textContent = "";
-  });
+// ===========================================================
+// SAFE Excel.run wrapper
+// ===========================================================
+async function safeExcelRun(cb) {
+  try {
+    return await Excel.run(cb);
+  } catch (e) {
+    console.warn("⚠️ Excel context problem:", e);
+    showToast("⚠️ Excel still initializing — try again.");
+    throw e;
+  }
 }
 
-// -----------------------------------------------------------
-// BUILD COLUMN MAP FROM WORKBOOK
-// -----------------------------------------------------------
+// ===========================================================
+// COLUMN MAP LOGIC
+// ===========================================================
 async function buildColumnMap() {
-  return Excel.run(async (ctx) => {
+  return safeExcelRun(async (ctx) => {
     const sheets = ctx.workbook.worksheets;
     sheets.load("items/name");
     await ctx.sync();
 
-    let output = [];
+    const result = [];
 
     for (const sheet of sheets.items) {
-      output.push(`Sheet: ${sheet.name}`);
+      result.push(`Sheet: ${sheet.name}`);
 
       const used = sheet.getUsedRangeOrNullObject(true);
       used.load("values,isNullObject");
       await ctx.sync();
 
-      if (used.isNullObject) continue;
+      if (used.isNullObject || !used.values || !used.values.length) continue;
 
-      const headers = used.values[0];
-      headers.forEach((h, i) => {
-        if (!h) return;
-        const col = String.fromCharCode(65 + i);
-        const address = `'${sheet.name}'!${col}2:${col}1048576`;
-        output.push(`${h.toLowerCase()} = ${address}`);
+      const headers = used.values[0] || [];
+      headers.forEach((header, idx) => {
+        if (!header) return;
+        const colLetter = String.fromCharCode(65 + idx);
+        const range = `'${sheet.name}'!${colLetter}2:INDEX('${sheet.name}'!${colLetter}:${colLetter},LOOKUP(2,1/('${sheet.name}'!${colLetter}:${colLetter}<>""),ROW('${sheet.name}'!${colLetter}:${colLetter})))`;
+        result.push(`${header.toString().trim().toLowerCase()} = ${range}`);
       });
     }
 
-    return output.join("\n");
+    return result.join("\n");
   });
 }
 
-// -----------------------------------------------------------
-// CALL BACKEND
-// -----------------------------------------------------------
-async function callGenerator(payload) {
+// ===========================================================
+// SHEET DROPDOWN POPULATION
+// ===========================================================
+async function refreshSheetDropdown(selectEl) {
+  try {
+    await safeExcelRun(async (ctx) => {
+      const sheets = ctx.workbook.worksheets;
+      sheets.load("items/name");
+      await ctx.sync();
+
+      selectEl.innerHTML = "";
+      sheets.items.forEach((s) => {
+        const opt = document.createElement("option");
+        opt.value = s.name;
+        opt.textContent = s.name;
+        selectEl.appendChild(opt);
+      });
+    });
+  } catch (e) {
+    console.warn("Could not refresh sheets:", e);
+    showToast("⚠️ Could not read workbook sheets.");
+  }
+}
+
+// ===========================================================
+// BACKEND FORMULA GENERATION (YOUR FORMULA LOGIC LIVES THERE)
+// ===========================================================
+async function generateFormulaFromBackend(payload) {
   const res = await safeFetch(`${API_BASE}/generate`, {
     method: "POST",
-    timeout: 8000,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    cache: "no-store",
+    timeout: 8000,
+    body: JSON.stringify(payload)
   });
 
-  if (!res.ok) {
-    return "=ERROR('Backend error')";
-  }
+  if (!res.ok) throw new Error(`Backend HTTP ${res.status}`);
 
   const data = await res.json();
-  return data.formula || "=ERROR('No formula')";
+  const formula = (data.formula || "").trim();
+  return formula || "=ERROR(\"Empty formula from backend\")";
 }
 
-// -----------------------------------------------------------
-// INSERT BUTTON
-// -----------------------------------------------------------
+// ===========================================================
+// INSERT FORMULA BUTTON
+// ===========================================================
 function attachInsertButton(container, formula) {
   container.querySelector(".btn-insert")?.remove();
 
   const btn = document.createElement("button");
-  btn.textContent = "Insert into Excel";
   btn.className = "btn-insert";
+  btn.textContent = "Insert into Excel";
 
   btn.onclick = async () => {
     try {
-      await Excel.run(async (ctx) => {
-        ctx.workbook.getSelectedRange().formulas = [[formula]];
+      await safeExcelRun(async (ctx) => {
+        const range = ctx.workbook.getSelectedRange();
+        range.formulas = [[formula]];
+        await ctx.sync();
       });
-      showToast("✅ Inserted!");
-    } catch {
-      showToast("⚠️ Select a cell first.");
+      showToast("✅ Formula inserted");
+    } catch (e) {
+      console.warn("Insert failed:", e);
+      showToast("⚠️ Select a cell and try again.");
     }
   };
 
@@ -254,18 +317,94 @@ function attachInsertButton(container, formula) {
   container.appendChild(btn);
 }
 
-// -----------------------------------------------------------
-// HELPERS
-// -----------------------------------------------------------
-function get(id) {
-  return document.getElementById(id);
+// ===========================================================
+// MAIN UI INITIALIZATION (keeps your behavior)
+// ===========================================================
+async function initExcelWizPro() {
+  console.log("🚀 Initializing ExcelWizPro UI…");
+
+  const sheetSelect = getEl("sheetSelect");
+  const queryInput = getEl("query");
+  const output = getEl("output");
+  const generateBtn = getEl("generateBtn");
+  const clearBtn = getEl("clearBtn");
+
+  let columnMapCache = "";
+  let lastFormula = "";
+
+  await refreshSheetDropdown(sheetSelect);
+  warmUpBackend(); // fire-and-forget
+
+  generateBtn.addEventListener("click", async () => {
+    try {
+      const query = queryInput.value.trim();
+      if (!query) {
+        showToast("⚠️ Please describe what you want the formula to do.");
+        return;
+      }
+
+      if (!navigator.onLine) {
+        showToast("📴 You appear to be offline.");
+        return;
+      }
+
+      output.textContent = "⏳ Generating formula…";
+
+      if (!columnMapCache) {
+        columnMapCache = await buildColumnMap();
+      }
+
+      const { version: excelVersion } = getOfficeDiagnostics();
+
+      const payload = {
+        query,
+        columnMap: columnMapCache,
+        excelVersion,
+        mainSheet: sheetSelect.value
+      };
+
+      const formula = await generateFormulaFromBackend(payload);
+      lastFormula = formula;
+
+      output.textContent = formula;
+      attachInsertButton(output, formula);
+    } catch (err) {
+      console.error("❌ Formula generation failed:", err);
+      output.textContent = "❌ Could not generate formula. See console for details.";
+      showToast("⚠️ Problem contacting the backend.");
+    }
+  });
+
+  clearBtn.addEventListener("click", () => {
+    queryInput.value = "";
+    output.textContent = "";
+  });
+
+  window.addEventListener("online", () => {
+    if (lastFormula) {
+      showToast("🌐 Back online — you can re-use your last formula.");
+    }
+  });
+
+  console.log("🟢 ExcelWizPro UI ready.");
 }
 
-function showToast(msg) {
-  const t = document.createElement("div");
-  t.className = "toast";
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2400);
-}
+// ===========================================================
+// MASTER BOOT
+// ===========================================================
+(async function boot() {
+  console.log("🧠 ExcelWizPro boot sequence starting…");
 
+  const info = await officeReady();
+  const hostOK = await ensureExcelHost(info);
+  if (!hostOK) return;
+
+  const excelReady = await waitForExcelApi();
+  if (!excelReady) return;
+
+  console.table(getOfficeDiagnostics());
+
+  await initExcelWizPro();
+  showToast("✅ ExcelWizPro ready!");
+  console.log("🟢 ExcelWizPro fully initialized.");
+})();
