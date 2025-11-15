@@ -1,118 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+  <meta charset="utf-8" />
   <title>ExcelWizPro</title>
-
-  <!-- Office.js MUST load first -->
-  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-
-  <!-- Minimal clean styling -->
-  <style>
-    body {
-      font-family: "Segoe UI", sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #fafafa;
-    }
-
-    header {
-      padding: 16px;
-      background: #0a5bd7;
-      color: white;
-      font-size: 18px;
-      font-weight: 600;
-      text-align: center;
-    }
-
-    main.container {
-      padding: 16px;
-    }
-
-    label {
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    select, input, textarea {
-      width: 100%;
-      padding: 8px;
-      margin-top: 4px;
-      margin-bottom: 12px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 14px;
-      resize: vertical;
-    }
-
-    textarea#output {
-      height: 80px;
-      background: #fff;
-    }
-
-    button {
-      padding: 8px 14px;
-      border-radius: 6px;
-      font-size: 14px;
-      cursor: pointer;
-      border: none;
-      font-weight: 600;
-    }
-
-    #generateBtn {
-      background: #0a5bd7;
-      color: white;
-      margin-right: 6px;
-    }
-
-    #clearBtn {
-      background: #e0e0e0;
-    }
-
-    .footer {
-      margin-top: 20px;
-      text-align: center;
-      font-size: 12px;
-      color: #777;
-    }
-
-    .btn-insert {
-      margin-top: 10px;
-      padding: 8px 12px;
-      border-radius: 6px;
-      background: #f0f0f0;
-      border: 1px solid #ccc;
-      cursor: pointer;
-    }
-  </style>
+  <link rel="stylesheet" href="taskpane.css" />
 </head>
 
 <body>
-  <header>ExcelWizPro</header>
-
   <main class="container">
 
-    <label for="sheetSelect">📄 Select Sheet</label>
-    <select id="sheetSelect"></select>
+    <!-- HEADER -->
+    <header class="ewp-header">
+      <div class="ewp-logo-circle">
+        <img src="assets/icon-64.png" alt="ExcelWizPro Logo">
+      </div>
 
-    <label for="query">🧠 Describe what you want your formula to do:</label>
-    <textarea id="query" placeholder="e.g. SUM sales where region = 'North'"></textarea>
+      <div class="ewp-title-block">
+        <h1>ExcelWizPro</h1>
+        <p class="ewp-subtitle">AI Formula Generator for Excel</p>
+      </div>
+    </header>
 
+    <hr class="ewp-divider">
+
+    <!-- SHEET SELECT -->
+    <label for="sheetSelect">Active Worksheet:</label>
+    <select id="sheetSelect">
+      <option>Loading…</option>
+    </select>
+
+    <!-- QUERY -->
+    <label for="query">Describe your formula goal:</label>
+    <textarea id="query" placeholder="e.g., sum sales where region = 'east'"></textarea>
+
+    <!-- BUTTONS -->
     <button id="generateBtn">Generate Formula</button>
     <button id="clearBtn">Clear</button>
 
-    <label for="output">📌 Generated Formula:</label>
-    <textarea id="output" readonly></textarea>
+    <!-- OUTPUT -->
+    <label for="output">Result:</label>
+    <div id="output"></div>
 
-    <div class="footer">ExcelWizPro — AI Formula Generator</div>
   </main>
-
-  <!-- Your FULL production script -->
-  <script src="./taskpane.js"></script>
-
 </body>
 </html>
 
