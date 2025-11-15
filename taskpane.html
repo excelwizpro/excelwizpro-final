@@ -2,178 +2,117 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <title>ExcelWizPro</title>
 
-  <!-- Office.js (required for Excel add-ins) -->
+  <!-- Office.js MUST load first -->
   <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 
-  <!-- Styles -->
+  <!-- Minimal clean styling -->
   <style>
-    :root {
-      --primary: #0078d4;
-      --primary-hover: #106ebe;
-      --success-bg: #e6ffed;
-      --success-text: #107c10;
-      --warn-bg: #fff3cd;
-      --warn-text: #856404;
-      --error-bg: #fdecea;
-      --error-text: #a80000;
-      --border: #d0d0d0;
-      --bg: #ffffff;
-      --text: #222;
-      --radius: 8px;
-      --transition: all 0.2s ease;
-      --font: "Segoe UI", system-ui, sans-serif;
+    body {
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #fafafa;
     }
 
-    /* Layout */
-    body {
-      margin: 0;
-      font-family: var(--font);
-      color: var(--text);
-      background-color: var(--bg);
-      padding: 1rem;
+    header {
+      padding: 16px;
+      background: #0a5bd7;
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
     }
 
     main.container {
-      display: flex;
-      flex-direction: column;
-      gap: 0.8rem;
-      max-width: 420px;
-      margin: 0 auto;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-      padding: 1rem 1.5rem;
+      padding: 16px;
     }
 
-    h1 {
-      text-align: center;
-      color: var(--primary);
-      font-size: 1.5rem;
-    }
-
-    /* Inputs */
     label {
-      font-weight: 500;
-      margin-top: 0.5rem;
+      font-size: 14px;
+      font-weight: 600;
     }
 
-    select, textarea {
+    select, input, textarea {
       width: 100%;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 0.5rem;
-      font-size: 0.9rem;
-      outline: none;
-      transition: var(--transition);
+      padding: 8px;
+      margin-top: 4px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      resize: vertical;
     }
 
-    select:focus, textarea:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+    textarea#output {
+      height: 80px;
+      background: #fff;
     }
 
-    /* Buttons */
     button {
-      border: none;
-      border-radius: var(--radius);
-      padding: 0.6rem 1rem;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 14px;
       cursor: pointer;
-      font-weight: 500;
-      font-family: var(--font);
-      transition: var(--transition);
+      border: none;
+      font-weight: 600;
     }
 
     #generateBtn {
-      background: var(--primary);
+      background: #0a5bd7;
       color: white;
-    }
-
-    #generateBtn:hover {
-      background: var(--primary-hover);
+      margin-right: 6px;
     }
 
     #clearBtn {
-      background: #f3f2f1;
-      border: 1px solid #ddd;
+      background: #e0e0e0;
     }
 
-    #clearBtn:hover {
-      background: #eaeaea;
+    .footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 12px;
+      color: #777;
     }
 
     .btn-insert {
-      background: var(--success-text);
-      color: white;
-      margin-top: 0.5rem;
-    }
-
-    .btn-insert:hover {
-      background: #0b6a0b;
-    }
-
-    /* Output */
-    #output {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 0.5rem;
-      background: #fafafa;
-      font-family: Consolas, monospace;
-      font-size: 0.9rem;
-      min-height: 50px;
-      line-height: 1.4;
-      word-wrap: break-word;
-    }
-
-    /* Toast */
-    .toast {
-      position: fixed;
-      bottom: 1rem;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--primary);
-      color: #fff;
-      padding: 0.7rem 1.2rem;
-      border-radius: 999px;
-      font-weight: 500;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-      opacity: 0.95;
-      z-index: 9999;
-      animation: fadeInOut 2.4s ease forwards;
-    }
-
-    @keyframes fadeInOut {
-      0% { opacity: 0; transform: translate(-50%, 20px); }
-      10% { opacity: 1; transform: translate(-50%, 0); }
-      90% { opacity: 1; transform: translate(-50%, 0); }
-      100% { opacity: 0; transform: translate(-50%, 20px); }
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      cursor: pointer;
     }
   </style>
 </head>
+
 <body>
+  <header>ExcelWizPro</header>
+
   <main class="container">
-    <h1>ExcelWizPro</h1>
 
-    <label for="sheetSelect">Active Worksheet:</label>
-    <select id="sheetSelect">
-      <option>Loading…</option>
-    </select>
+    <label for="sheetSelect">📄 Select Sheet</label>
+    <select id="sheetSelect"></select>
 
-    <label for="query">Describe your formula goal:</label>
-    <textarea id="query" rows="3" placeholder="e.g. Sum all sales in January where region = 'West'"></textarea>
+    <label for="query">🧠 Describe what you want your formula to do:</label>
+    <textarea id="query" placeholder="e.g. SUM sales where region = 'North'"></textarea>
 
-    <div style="display: flex; gap: 0.6rem; justify-content: space-between;">
-      <button id="generateBtn" style="flex: 1;">Generate Formula</button>
-      <button id="clearBtn">Clear</button>
-    </div>
+    <button id="generateBtn">Generate Formula</button>
+    <button id="clearBtn">Clear</button>
 
-    <div id="output" placeholder="Generated formula will appear here…"></div>
+    <label for="output">📌 Generated Formula:</label>
+    <textarea id="output" readonly></textarea>
+
+    <div class="footer">ExcelWizPro — AI Formula Generator</div>
   </main>
 
-  <!-- Script -->
-  <script src="taskpane.js"></script>
+  <!-- Your FULL production script -->
+  <script src="./taskpane.js"></script>
+
 </body>
 </html>
+
