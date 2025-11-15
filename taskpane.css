@@ -1,173 +1,196 @@
+/* ===========================================================
+   ExcelWizPro — Premium UI Style Sheet (v3.0)
+   Fluent-like design, modern inputs, smooth animations
+   =========================================================== */
+
 :root {
-  --primary: #0a5bd7;
-  --primary-hover: #084eb9;
-  --primary-light: #e8f2ff;
-
-  --success-bg: #e6ffed;
-  --success-text: #0e7c0e;
-
-  --warn-bg: #fff6d9;
-  --warn-text: #8a6b0f;
-
-  --error-bg: #fdeaea;
-  --error-text: #b40000;
-
-  --bg: #fafafa;
-  --panel-bg: #ffffff;
-  --border: #d9d9d9;
-
+  --primary: #0078d4;
+  --primary-hover: #106ebe;
+  --primary-light: #d0e7ff;
+  --success: #0f7b0f;
+  --success-bg: #e6ffe6;
+  --warning: #986f00;
+  --warning-bg: #fff4ce;
+  --error: #d13438;
+  --error-bg: #fde7e9;
+  --border: #d1d1d1;
   --radius: 10px;
-  --radius-sm: 6px;
-  --transition: 150ms ease;
-
   --font: "Segoe UI", system-ui, sans-serif;
+  --shadow: 0 3px 10px rgba(0,0,0,0.08);
+  --shadow-strong: 0 4px 16px rgba(0,0,0,0.12);
 }
 
-/* Page */
+/* Overall Page */
 body {
   margin: 0;
   padding: 0;
   font-family: var(--font);
-  background: var(--bg);
-  color: #222;
-}
-
-/* Header */
-header {
-  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
-  color: #fff;
-  padding: 16px;
-  font-size: 18px;
-  font-weight: 600;
-  text-align: center;
-  letter-spacing: 0.4px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-/* Main Card Container */
-main.container {
-  padding: 1.6rem;
-  margin: 1rem auto;
-  background: var(--panel-bg);
-  border-radius: 16px;
-  max-width: 440px;
-
-  box-shadow:
-    0 2px 6px rgba(0, 0, 0, 0.05),
-    0 6px 20px rgba(0, 0, 0, 0.06);
-}
-
-label {
-  font-weight: 600;
-  margin-bottom: 4px;
-  font-size: 0.88rem;
-  display: block;
+  background: #f7f7f7;
   color: #333;
 }
 
-/* Inputs */
+/* Main Card */
+main.container {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 1.4rem 1.6rem;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  margin-top: 1rem;
+}
+
+/* Header */
+h1 {
+  text-align: center;
+  font-size: 1.55rem;
+  margin-top: 0.2rem;
+  margin-bottom: 0.8rem;
+  font-weight: 600;
+  color: var(--primary);
+  letter-spacing: -0.3px;
+}
+
+/* Labels */
+label {
+  margin-top: 0.6rem;
+  margin-bottom: 0.2rem;
+  display: inline-block;
+  font-weight: 600;
+  color: #444;
+}
+
+/* Input + dropdown styling */
 select,
 textarea {
   width: 100%;
-  padding: 10px 12px;
-  font-size: 0.92rem;
-
-  background: #fff;
+  font-family: var(--font);
+  font-size: 0.95rem;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  transition: var(--transition);
+  padding: 0.55rem 0.65rem;
+  box-sizing: border-box;
+  background: #fff;
+  transition: 0.2s border, 0.2s box-shadow;
 }
 
 select:focus,
 textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(10, 91, 215, 0.18);
-  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-light);
 }
 
-/* Output */
-#output {
-  background: #f7f9fc;
-  border: 1px solid var(--border);
-  min-height: 70px;
-  font-family: Consolas, monospace;
-  border-radius: var(--radius-sm);
-  padding: 10px;
+/* Textarea */
+textarea {
+  min-height: 75px;
+  resize: vertical;
   line-height: 1.4;
-  transition: var(--transition);
-}
-
-#output:hover {
-  background: #f2f6fc;
 }
 
 /* Buttons */
 button {
-  cursor: pointer;
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
+  font-family: var(--font);
   border: none;
+  border-radius: var(--radius);
+  padding: 0.6rem 1rem;
+  cursor: pointer;
   font-weight: 600;
-  font-size: 0.9rem;
-  transition: var(--transition);
+  letter-spacing: 0.2px;
+  transition: 0.2s background, 0.2s transform;
 }
 
+/* Generate button */
 #generateBtn {
   background: var(--primary);
-  color: #fff;
-  box-shadow: 0 2px 4px rgba(10, 91, 215, 0.2);
+  color: white;
+  width: 100%;
+  margin-top: 0.8rem;
 }
 
 #generateBtn:hover {
   background: var(--primary-hover);
-  box-shadow: 0 3px 8px rgba(10, 91, 215, 0.3);
 }
 
+#generateBtn:active {
+  transform: scale(0.97);
+}
+
+/* Clear button */
 #clearBtn {
-  background: #eeeeee;
-  color: #333;
-  border: 1px solid #ddd;
+  background: #f3f2f1;
+  border: 1px solid #ccc;
+  margin-top: 0.5rem;
 }
 
 #clearBtn:hover {
-  background: #e2e2e2;
+  background: #eaeaea;
 }
 
-/* Insert Button */
+/* Insert button */
 .btn-insert {
-  margin-top: 10px;
-  background: var(--success-text);
-  color: #fff;
-  border-radius: var(--radius-sm);
-  padding: 8px 14px;
+  background: var(--success);
+  color: white;
+  margin-top: 0.6rem;
+  padding: 0.5rem 0.9rem;
 }
 
 .btn-insert:hover {
-  background: #0c6c0c;
+  background: #0c660c;
 }
 
-/* Toast */
+.btn-insert:active {
+  transform: scale(0.97);
+}
+
+/* Output box */
+#output {
+  margin-top: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem;
+  background: #fafafa;
+  font-family: Consolas, monospace;
+  font-size: 0.92rem;
+  min-height: 60px;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.04);
+}
+
+/* Toast Notifications */
 .toast {
   position: fixed;
-  bottom: 1rem;
+  bottom: 1.2rem;
   left: 50%;
-  transform: translateX(-50%) translateY(20px);
-  background: rgba(10, 91, 215, 0.98);
-  color: #fff;
-
-  padding: 10px 18px;
+  transform: translateX(-50%);
+  background: var(--primary);
+  color: white;
+  padding: 0.65rem 1.3rem;
   border-radius: 999px;
   font-weight: 600;
-  font-size: 0.87rem;
-
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-  animation: toastFade 2.8s ease-out forwards;
-  z-index: 999999;
+  letter-spacing: 0.3px;
+  box-shadow: var(--shadow-strong);
+  animation: toastFade 2.5s ease forwards;
+  z-index: 9999;
+  font-size: 0.9rem;
 }
 
 @keyframes toastFade {
-  0% { opacity: 0; transform: translate(-50%, 30px); }
-  12% { opacity: 1; transform: translate(-50%, 0); }
-  88% { opacity: 1; transform: translate(-50%, 0); }
-  100% { opacity: 0; transform: translate(-50%, 20px); }
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  10% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  90% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
 }
+
