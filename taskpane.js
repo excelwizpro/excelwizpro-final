@@ -1,11 +1,11 @@
 // ===========================================================
-// ExcelWizPro Taskpane — v12.2.0
-// Advanced Smart Mapping + Auto-Refresh (patched)
+// ExcelWizPro Taskpane — v12.3.0
+// Advanced Smart Mapping + Auto-Refresh (fully patched)
 // ===========================================================
 /* global Office, Excel, fetch */
 
 const API_BASE = "https://excelwizpro-finalapi.onrender.com";
-const VERSION = "12.2.0";
+const VERSION = "12.3.0";
 
 console.log(`🧠 ExcelWizPro Taskpane v${VERSION} loaded`);
 
@@ -202,6 +202,7 @@ async function safeExcelRun(cb) {
 let columnMapCache = "";
 let lastColumnMapBuild = 0;
 const COLUMN_MAP_TTL_MS = 30000; // 30s cache
+const MAX_DATA_ROWS_PER_COLUMN = 50000; // avoid million-row ranges
 
 async function buildColumnMap() {
   return safeExcelRun(async (ctx) => {
@@ -219,7 +220,7 @@ async function buildColumnMap() {
       const visText = vis !== "Visible" ? ` (${vis.toLowerCase()})` : "";
       lines.push(`Sheet: ${sheet.name}${visText}`);
 
-      const used = sheet.getUsedRangeOrNullObject(false);
+      const used = sheet.getUsedRangeOrNullObject(); // safer: no "false" arg
       used.load("rowCount,columnCount,rowIndex,columnIndex,isNullObject");
       await ctx.sync();
 
@@ -239,19 +240,45 @@ async function buildColumnMap() {
       const dataStartRowIndex = used.rowIndex + headerRows;
       const dataLastRowIndex = used.rowIndex + used.rowCount - 1;
       const startRow = dataStartRowIndex + 1; // 1-based
-      const lastRow = dataLastRowIndex + 1; // 1-based
+
+      // We cap the data height to avoid absurdly large ranges from ghost formatting
+      const maxLastRow = startRow + MAX_DATA_ROWS_PER_COLUMN - 1;
+      const lastRowCandidate = dataLastRowIndex + 1; // 1-based
+      const lastRow = Math.min(lastRowCandidate, maxLastRow);
+
+      if (lastRow < startRow) {
+        // no real data rows after headers
+        continue;
+      }
 
       for (let col = 0; col < used.columnCount; col++) {
-        const parts = [];
+        // Build stable header with "bottom-most non-empty" logic
+        const headerTexts = [];
         for (let r = 0; r < headerRows; r++) {
           const v = headers[r][col];
-          if (v !== null && v !== "" && v !== undefined) {
-            parts.push(String(v).trim());
+          headerTexts[r] =
+            v !== null && v !== "" && v !== undefined ? String(v).trim() : "";
+        }
+
+        // primary: last non-empty header cell (closest to data)
+        let primary = "";
+        for (let r = headerRows - 1; r >= 0; r--) {
+          if (headerTexts[r]) {
+            primary = headerTexts[r];
+            break;
           }
         }
-        if (!parts.length) continue;
+        if (!primary) continue;
 
-        const combined = parts.join(" - ");
+        // optional: prefix with a higher-level header if present and distinct
+        let combined = primary;
+        for (let r = 0; r < headerRows - 1; r++) {
+          if (headerTexts[r] && headerTexts[r] !== primary) {
+            combined = `${headerTexts[r]} - ${combined}`;
+            break;
+          }
+        }
+
         let normalized = normalizeName(combined);
 
         // avoid collisions by suffixing
@@ -349,12 +376,16 @@ async function buildColumnMap() {
 async function autoRefreshColumnMap(force = false) {
   try {
     const now = Date.now();
-    if (!force && columnMapCache && now - lastColumnMapBuild < COLUMN_MAP_TTL_MS) {
+    if (
+      !force &&
+      columnMapCache &&
+      now - lastColumnMapBuild < COLUMN_MAP_TTL_MS
+    ) {
       console.log("🔄 Using cached Smart Column Map (recent)");
       return;
     }
 
-    console.log("🔄 Auto-refreshing Smart Column Map…");
+    console.log("🔄 Refreshing Smart Column Map…");
     columnMapCache = await buildColumnMap();
     lastColumnMapBuild = Date.now();
     console.log("✅ Updated Smart Column Map");
@@ -413,7 +444,7 @@ async function generateFormulaFromBackend(payload) {
   });
 
   const data = await r.json();
-  return data.formula || "=ERROR(\"No formula returned\")";
+  return data.formula || '=ERROR("No formula returned")';
 }
 
 // ===========================================================
@@ -482,8 +513,11 @@ async function initExcelWizPro() {
 
     output.textContent = "⏳ Generating…";
 
-    // Ensure map is ready
-    if (!columnMapCache) await autoRefreshColumnMap(true);
+    // Ensure map is reasonably fresh each time
+    await autoRefreshColumnMap(false);
+    if (!columnMapCache) {
+      await autoRefreshColumnMap(true);
+    }
 
     const { version } = getOfficeDiagnostics();
 
