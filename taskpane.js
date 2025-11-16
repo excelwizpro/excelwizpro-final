@@ -1,30 +1,32 @@
 // ===========================================================
-// ExcelWizPro Taskpane Script — Production Build (Option A)
+// ExcelWizPro Taskpane Script — Production Build (Optimized)
 // - Safe Office/Excel startup for deployed add-ins
 // - Calls backend /generate for all formula logic
-// - Clean UI wiring, minimal but useful logging
+// - Large-table friendly column mapping
 // ===========================================================
 /* global Office, Excel, fetch */
 
 const API_BASE = "https://excelwizpro-finalapi.onrender.com";
-const VERSION = "11.0.0";
+const VERSION = "11.4.0";
 
 console.log(`🧠 ExcelWizPro v${VERSION} taskpane.js loaded`);
 
-// Optional: better Office error logging
-if (Office && Office.config) {
+// Optional: better Office error logging (guard against undefined Office)
+if (typeof Office !== "undefined" && Office && Office.config) {
   Office.config = { extendedErrorLogging: true };
 }
 
 // -----------------------------------------------------------
 // Global safety: don't let errors silently kill the WebView
 // -----------------------------------------------------------
-window.addEventListener("error", (e) => {
-  console.warn("Window error:", e.message || e.error);
-});
-window.addEventListener("unhandledrejection", (e) => {
-  console.warn("Unhandled promise rejection:", e.reason);
-});
+if (typeof window !== "undefined") {
+  window.addEventListener("error", (e) => {
+    console.warn("Window error:", e.message || e.error);
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    console.warn("Unhandled promise rejection:", e.reason);
+  });
+}
 
 // -----------------------------------------------------------
 // Basic helpers
@@ -48,6 +50,18 @@ function showToast(msg) {
   setTimeout(() => toast.remove(), 2600);
 }
 
+// Convert 0-based column index → Excel column letters (A, B, ... AA, AB, etc.)
+function columnIndexToLetter(index) {
+  let n = index + 1;
+  let letters = "";
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    letters = String.fromCharCode(65 + rem) + letters;
+    n = Math.floor((n - 1) / 26);
+  }
+  return letters;
+}
+
 // -----------------------------------------------------------
 // Abort + safeFetch for offline / timeouts
 // -----------------------------------------------------------
@@ -58,8 +72,8 @@ function timeoutSignal(ms) {
   return ctrl.signal;
 }
 
-async function safeFetch(url, { timeout = 8000, ...opts } = {}) {
-  if (!navigator.onLine) {
+async function safeFetch(url, { timeout = 12000, ...opts } = {}) {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
     const err = new Error("offline");
     err.code = "OFFLINE";
     throw err;
@@ -92,7 +106,7 @@ function getOfficeDiagnostics() {
 // Step 1 — wait for Office.js / host
 function officeReady() {
   return new Promise((resolve) => {
-    if (window.Office && Office.onReady) {
+    if (typeof Office !== "undefined" && Office && Office.onReady) {
       Office.onReady((info) => {
         console.log("📘 Office.onReady:", info);
         resolve(info);
@@ -102,7 +116,7 @@ function officeReady() {
       let tries = 0;
       const timer = setInterval(() => {
         tries++;
-        if (window.Office && Office.onReady) {
+        if (typeof Office !== "undefined" && Office && Office.onReady) {
           clearInterval(timer);
           Office.onReady((info) => {
             console.log("📘 Office.onReady (delayed):", info);
@@ -170,7 +184,7 @@ async function warmUpBackend(max = 5, baseDelay = 2000) {
       try {
         const res = await safeFetch(`${API_BASE}/health`, {
           cache: "no-store",
-          timeout: 3000
+          timeout: 5000
         });
         if (res.ok) {
           statusDiv.textContent = "✅ Backend awake";
@@ -214,7 +228,7 @@ async function safeExcelRun(cb) {
 }
 
 // ===========================================================
-// COLUMN MAP LOGIC
+// COLUMN MAP LOGIC (Large-table friendly)
 // ===========================================================
 async function buildColumnMap() {
   return safeExcelRun(async (ctx) => {
@@ -222,27 +236,48 @@ async function buildColumnMap() {
     sheets.load("items/name");
     await ctx.sync();
 
-    const result = [];
+    const lines = [];
 
     for (const sheet of sheets.items) {
-      result.push(`Sheet: ${sheet.name}`);
+      lines.push(`Sheet: ${sheet.name}`);
 
-      const used = sheet.getUsedRangeOrNullObject(true);
-      used.load("values,isNullObject");
+      // Use usedRange METADATA only (no full .values) for performance
+      const used = sheet.getUsedRangeOrNullObject(false); // ignore pure formatting
+      used.load("rowCount,columnCount,isNullObject");
       await ctx.sync();
 
-      if (used.isNullObject || !used.values || !used.values.length) continue;
+      if (used.isNullObject || used.rowCount < 2 || used.columnCount < 1) {
+        // No data rows or empty sheet
+        continue;
+      }
 
-      const headers = used.values[0] || [];
-      headers.forEach((header, idx) => {
+      // Load just the header row
+      const headerRange = sheet.getRangeByIndexes(0, 0, 1, used.columnCount);
+      headerRange.load("values");
+      await ctx.sync();
+
+      const headers = headerRange.values[0] || [];
+      const lastRow = used.rowCount; // includes header
+
+      headers.forEach((header, colIdx) => {
         if (!header) return;
-        const colLetter = String.fromCharCode(65 + idx);
-        const range = `'${sheet.name}'!${colLetter}2:INDEX('${sheet.name}'!${colLetter}:${colLetter},LOOKUP(2,1/('${sheet.name}'!${colLetter}:${colLetter}<>""),ROW('${sheet.name}'!${colLetter}:${colLetter})))`;
-        result.push(`${header.toString().trim().toLowerCase()} = ${range}`);
+
+        const name = header.toString().trim().toLowerCase();
+        if (!name) return;
+
+        const colLetter = columnIndexToLetter(colIdx);
+        const startRow = 2; // data starts after header row
+        if (lastRow <= 1) return;
+
+        // Explicit non-volatile range: 'Sheet'!A2:A{lastRow}
+        const safeSheetName = sheet.name.replace(/'/g, "''");
+        const range = `'${safeSheetName}'!${colLetter}${startRow}:${colLetter}${lastRow}`;
+
+        lines.push(`${name} = ${range}`);
       });
     }
 
-    return result.join("\n");
+    return lines.join("\n");
   });
 }
 
@@ -271,14 +306,14 @@ async function refreshSheetDropdown(selectEl) {
 }
 
 // ===========================================================
-// BACKEND FORMULA GENERATION (YOUR FORMULA LOGIC LIVES THERE)
+// BACKEND FORMULA GENERATION
 // ===========================================================
 async function generateFormulaFromBackend(payload) {
   const res = await safeFetch(`${API_BASE}/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     cache: "no-store",
-    timeout: 8000,
+    timeout: 15000,
     body: JSON.stringify(payload)
   });
 
@@ -286,7 +321,7 @@ async function generateFormulaFromBackend(payload) {
 
   const data = await res.json();
   const formula = (data.formula || "").trim();
-  return formula || "=ERROR(\"Empty formula from backend\")";
+  return formula || '=ERROR("Empty formula from backend")';
 }
 
 // ===========================================================
@@ -318,7 +353,7 @@ function attachInsertButton(container, formula) {
 }
 
 // ===========================================================
-// MAIN UI INITIALIZATION (keeps your behavior)
+// MAIN UI INITIALIZATION
 // ===========================================================
 async function initExcelWizPro() {
   console.log("🚀 Initializing ExcelWizPro UI…");
@@ -343,13 +378,14 @@ async function initExcelWizPro() {
         return;
       }
 
-      if (!navigator.onLine) {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
         showToast("📴 You appear to be offline.");
         return;
       }
 
       output.textContent = "⏳ Generating formula…";
 
+      // Build column map once per taskpane session (fast even on large sheets now)
       if (!columnMapCache) {
         columnMapCache = await buildColumnMap();
       }
@@ -370,7 +406,8 @@ async function initExcelWizPro() {
       attachInsertButton(output, formula);
     } catch (err) {
       console.error("❌ Formula generation failed:", err);
-      output.textContent = "❌ Could not generate formula. See console for details.";
+      output.textContent =
+        "❌ Could not generate formula. See console for details.";
       showToast("⚠️ Problem contacting the backend.");
     }
   });
