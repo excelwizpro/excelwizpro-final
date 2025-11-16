@@ -1,13 +1,13 @@
 // ===========================================================
-// ExcelWizPro Taskpane Script — Production Build (Optimized)
-// - Safe Office/Excel startup for deployed add-ins
-// - Calls backend /generate for all formula logic
-// - Large-table friendly column mapping
+// ExcelWizPro Taskpane Script — v12.0.0 (Advanced Smart Mapping)
+// - Safe Office/Excel startup
+// - Smart column mapping: headers, tables, named ranges, pivots
+// - Backend /generate does rule logic + optional AI
 // ===========================================================
 /* global Office, Excel, fetch */
 
 const API_BASE = "https://excelwizpro-finalapi.onrender.com";
-const VERSION = "11.4.0";
+const VERSION = "12.0.0";
 
 console.log(`🧠 ExcelWizPro v${VERSION} taskpane.js loaded`);
 
@@ -60,6 +60,14 @@ function columnIndexToLetter(index) {
     n = Math.floor((n - 1) / 26);
   }
   return letters;
+}
+
+// Normalize a name for mapping (lowercase, spaces → underscores)
+function normalizeName(name) {
+  return String(name || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_");
 }
 
 // -----------------------------------------------------------
@@ -228,53 +236,151 @@ async function safeExcelRun(cb) {
 }
 
 // ===========================================================
-// COLUMN MAP LOGIC (Large-table friendly)
+// ADVANCED SMART COLUMN MAP LOGIC (Option B)
+// - Multi-row headers (up to 3 rows)
+// - Tables (ListObjects)
+// - Named ranges
+// - Pivot table context
 // ===========================================================
 async function buildColumnMap() {
   return safeExcelRun(async (ctx) => {
-    const sheets = ctx.workbook.worksheets;
-    sheets.load("items/name");
+    const lines = [];
+    const wb = ctx.workbook;
+    const sheets = wb.worksheets;
+
+    sheets.load("items/name,items/visibility");
     await ctx.sync();
 
-    const lines = [];
-
+    // ---------- 1) Sheet-based headers (multi-row) ----------
     for (const sheet of sheets.items) {
-      lines.push(`Sheet: ${sheet.name}`);
+      const visibility = sheet.visibility || "Visible";
+      const visibilityLabel =
+        visibility !== "Visible" ? ` (${visibility.toLowerCase()})` : "";
+      lines.push(`Sheet: ${sheet.name}${visibilityLabel}`);
 
-      // Use usedRange METADATA only (no full .values) for performance
       const used = sheet.getUsedRangeOrNullObject(false); // ignore pure formatting
       used.load("rowCount,columnCount,isNullObject");
       await ctx.sync();
 
       if (used.isNullObject || used.rowCount < 2 || used.columnCount < 1) {
-        // No data rows or empty sheet
+        // No data rows or effectively empty sheet
         continue;
       }
 
-      // Load just the header row
-      const headerRange = sheet.getRangeByIndexes(0, 0, 1, used.columnCount);
+      const headerDepth = Math.min(3, used.rowCount); // up to 3 header rows
+      const headerRange = sheet.getRangeByIndexes(
+        0,
+        0,
+        headerDepth,
+        used.columnCount
+      );
       headerRange.load("values");
       await ctx.sync();
 
-      const headers = headerRange.values[0] || [];
-      const lastRow = used.rowCount; // includes header
+      const headerValues = headerRange.values || [];
+      const dataStartRow = headerDepth + 1; // data starts after header rows
+      const lastRow = used.rowCount; // includes header rows
 
-      headers.forEach((header, colIdx) => {
-        if (!header) return;
+      for (let colIdx = 0; colIdx < used.columnCount; colIdx++) {
+        const parts = [];
 
-        const name = header.toString().trim().toLowerCase();
-        if (!name) return;
+        for (let r = 0; r < headerDepth; r++) {
+          const val = headerValues[r]?.[colIdx];
+          if (val !== null && val !== undefined && String(val).trim() !== "") {
+            parts.push(String(val).trim());
+          }
+        }
+
+        if (!parts.length) continue; // no header for this column
+
+        const combinedHeader = parts.join(" - ");
+        const normalized = normalizeName(combinedHeader);
+        if (!normalized) continue;
 
         const colLetter = columnIndexToLetter(colIdx);
-        const startRow = 2; // data starts after header row
-        if (lastRow <= 1) return;
-
-        // Explicit non-volatile range: 'Sheet'!A2:A{lastRow}
         const safeSheetName = sheet.name.replace(/'/g, "''");
-        const range = `'${safeSheetName}'!${colLetter}${startRow}:${colLetter}${lastRow}`;
+        const range = `'${safeSheetName}'!${colLetter}${dataStartRow}:${colLetter}${lastRow}`;
 
-        lines.push(`${name} = ${range}`);
-      });
+        lines.push(`${normalized} = ${range}`);
+      }
+
+      // ---------- 2) Tables on this sheet ----------
+      const tables = sheet.tables;
+      tables.load("items/name");
+      await ctx.sync();
+
+      if (tables.items.length) {
+        for (const table of tables.items) {
+          lines.push(`Table: ${table.name}`);
+
+          const headerRange = table.getHeaderRowRange();
+          const dataRange = table.getDataBodyRange();
+
+          headerRange.load("values");
+          dataRange.load("rowCount,columnCount,address");
+        }
+
+        await ctx.sync();
+
+        for (const table of tables.items) {
+          const headerRange = table.getHeaderRowRange();
+          const dataRange = table.getDataBodyRange();
+          const headers = (headerRange.values && headerRange.values[0]) || [];
+
+          headers.forEach((header, idx) => {
+            if (!header) return;
+            const headerName = String(header).trim();
+            if (!headerName) return;
+
+            const tableNorm = normalizeName(table.name);
+            const headerNorm = normalizeName(headerName);
+            const combinedName = `${tableNorm}.${headerNorm}`;
+
+            // Use structured references for dynamic ranges
+            const structuredRef = `${table.name}[${headerName}]`;
+
+            lines.push(`${combinedName} = ${structuredRef}`);
+          });
+        }
+      }
+
+      // ---------- 3) Pivot tables (context only, for AI) ----------
+      const pivots = sheet.pivotTables;
+      pivots.load("items/name");
+      await ctx.sync();
+
+      if (pivots.items.length) {
+        for (const p of pivots.items) {
+          lines.push(`PivotSource: ${p.name}`);
+          // We don't map pivot fields as ranges (GETPIVOTDATA is more appropriate)
+          // but the name + sheet context is very useful for AI prompts.
+        }
+      }
+    }
+
+    // ---------- 4) Workbook Named Ranges ----------
+    const names = wb.names;
+    names.load("items/name");
+    await ctx.sync();
+
+    if (names.items.length) {
+      const nameMetadata = [];
+
+      for (const namedItem of names.items) {
+        const range = namedItem.getRange();
+        range.load("address");
+        nameMetadata.push({ namedItem, range });
+      }
+
+      await ctx.sync();
+
+      for (const { namedItem, range } of nameMetadata) {
+        lines.push(`NamedRange: ${namedItem.name}`);
+        const norm = normalizeName(namedItem.name);
+        if (!norm) continue;
+        // address is already a valid reference like Sheet1!$A$1:$A$1000 or $A$1
+        lines.push(`${norm} = ${range.address}`);
+      }
     }
 
     return lines.join("\n");
@@ -385,7 +491,7 @@ async function initExcelWizPro() {
 
       output.textContent = "⏳ Generating formula…";
 
-      // Build column map once per taskpane session (fast even on large sheets now)
+      // Build smart column map once per taskpane session
       if (!columnMapCache) {
         columnMapCache = await buildColumnMap();
       }
