@@ -1,11 +1,11 @@
 // ===========================================================
-// ExcelWizPro Taskpane — v12.1.0
-// Advanced Smart Mapping + Auto-Refresh
+// ExcelWizPro Taskpane — v12.2.0
+// Advanced Smart Mapping + Auto-Refresh (patched)
 // ===========================================================
 /* global Office, Excel, fetch */
 
 const API_BASE = "https://excelwizpro-finalapi.onrender.com";
-const VERSION = "12.1.0";
+const VERSION = "12.2.0";
 
 console.log(`🧠 ExcelWizPro Taskpane v${VERSION} loaded`);
 
@@ -66,7 +66,9 @@ function normalizeName(name) {
 function timeoutSignal(ms) {
   if (typeof AbortController === "undefined") return undefined;
   const ctrl = new AbortController();
-  setTimeout(() => ctrl.abort(), ms);
+  const id = setTimeout(() => ctrl.abort(), ms);
+  // Clean up timer when aborted
+  ctrl.signal.addEventListener("abort", () => clearTimeout(id));
   return ctrl.signal;
 }
 async function safeFetch(url, { timeout = 15000, ...opts } = {}) {
@@ -195,15 +197,11 @@ async function safeExcelRun(cb) {
 }
 
 // ===========================================================
-// ADVANCED SMART COLUMN MAPPING (Option B)
-// -----------------------------------------------------------
-// • Multi-row headers (up to 3 rows)
-// • Excel Tables (ListObjects)
-// • Named Ranges
-// • Pivot Tables (context only)
-// • Safe for 1M+ rows
+// ADVANCED SMART COLUMN MAPPING
 // ===========================================================
 let columnMapCache = "";
+let lastColumnMapBuild = 0;
+const COLUMN_MAP_TTL_MS = 30000; // 30s cache
 
 async function buildColumnMap() {
   return safeExcelRun(async (ctx) => {
@@ -214,6 +212,7 @@ async function buildColumnMap() {
     await ctx.sync();
 
     const lines = [];
+    const globalNameCounts = Object.create(null);
 
     for (const sheet of sheets.items) {
       const vis = sheet.visibility;
@@ -221,15 +220,15 @@ async function buildColumnMap() {
       lines.push(`Sheet: ${sheet.name}${visText}`);
 
       const used = sheet.getUsedRangeOrNullObject(false);
-      used.load("rowCount,columnCount,isNullObject");
+      used.load("rowCount,columnCount,rowIndex,columnIndex,isNullObject");
       await ctx.sync();
 
       if (used.isNullObject || used.rowCount < 2) continue;
 
       const headerRows = Math.min(3, used.rowCount);
       const headerRange = sheet.getRangeByIndexes(
-        0,
-        0,
+        used.rowIndex,
+        used.columnIndex,
         headerRows,
         used.columnCount
       );
@@ -237,8 +236,10 @@ async function buildColumnMap() {
       await ctx.sync();
 
       const headers = headerRange.values;
-      const startRow = headerRows + 1;
-      const lastRow = used.rowCount;
+      const dataStartRowIndex = used.rowIndex + headerRows;
+      const dataLastRowIndex = used.rowIndex + used.rowCount - 1;
+      const startRow = dataStartRowIndex + 1; // 1-based
+      const lastRow = dataLastRowIndex + 1; // 1-based
 
       for (let col = 0; col < used.columnCount; col++) {
         const parts = [];
@@ -251,12 +252,21 @@ async function buildColumnMap() {
         if (!parts.length) continue;
 
         const combined = parts.join(" - ");
-        const normalized = normalizeName(combined);
-        const colLetter = columnIndexToLetter(col);
-        const safe = sheet.name.replace(/'/g, "''");
+        let normalized = normalizeName(combined);
+
+        // avoid collisions by suffixing
+        if (globalNameCounts[normalized]) {
+          globalNameCounts[normalized] += 1;
+          normalized = `${normalized}__${globalNameCounts[normalized]}`;
+        } else {
+          globalNameCounts[normalized] = 1;
+        }
+
+        const colLetter = columnIndexToLetter(used.columnIndex + col);
+        const safeSheetName = sheet.name.replace(/'/g, "''");
 
         lines.push(
-          `${normalized} = '${safe}'!${colLetter}${startRow}:${colLetter}${lastRow}`
+          `${normalized} = '${safeSheetName}'!${colLetter}${startRow}:${colLetter}${lastRow}`
         );
       }
 
@@ -265,21 +275,33 @@ async function buildColumnMap() {
       tables.load("items/name");
       await ctx.sync();
 
-      for (const table of tables.items) {
-        lines.push(`Table: ${table.name}`);
+      const tableMeta = tables.items.map((table) => {
+        return {
+          table,
+          header: table.getHeaderRowRange(),
+          body: table.getDataBodyRange()
+        };
+      });
 
-        const header = table.getHeaderRowRange();
-        const body = table.getDataBodyRange();
-        header.load("values");
-        body.load("address,rowCount,columnCount");
-      }
+      tableMeta.forEach((m) => {
+        m.header.load("values");
+        m.body.load("address,rowCount,columnCount");
+      });
       await ctx.sync();
 
-      for (const table of tables.items) {
-        const headerVals = table.getHeaderRowRange().values?.[0] || [];
+      for (const { table, header, body } of tableMeta) {
+        lines.push(`Table: ${table.name}`);
+
+        const headerVals = (header.values && header.values[0]) || [];
         headerVals.forEach((h) => {
           if (!h) return;
-          const norm = normalizeName(`${table.name}.${h}`);
+          let norm = normalizeName(`${table.name}.${h}`);
+          if (globalNameCounts[norm]) {
+            globalNameCounts[norm] += 1;
+            norm = `${norm}__${globalNameCounts[norm]}`;
+          } else {
+            globalNameCounts[norm] = 1;
+          }
           const structuredRef = `${table.name}[${h}]`;
           lines.push(`${norm} = ${structuredRef}`);
         });
@@ -307,7 +329,13 @@ async function buildColumnMap() {
 
     meta.forEach(({ name, range }) => {
       lines.push(`NamedRange: ${name}`);
-      const norm = normalizeName(name);
+      let norm = normalizeName(name);
+      if (globalNameCounts[norm]) {
+        globalNameCounts[norm] += 1;
+        norm = `${norm}__${globalNameCounts[norm]}`;
+      } else {
+        globalNameCounts[norm] = 1;
+      }
       lines.push(`${norm} = ${range.address}`);
     });
 
@@ -318,10 +346,17 @@ async function buildColumnMap() {
 // -----------------------------------------------------------
 // AUTO REFRESH COLUMN MAP (on taskpane visibility)
 // -----------------------------------------------------------
-async function autoRefreshColumnMap() {
+async function autoRefreshColumnMap(force = false) {
   try {
+    const now = Date.now();
+    if (!force && columnMapCache && now - lastColumnMapBuild < COLUMN_MAP_TTL_MS) {
+      console.log("🔄 Using cached Smart Column Map (recent)");
+      return;
+    }
+
     console.log("🔄 Auto-refreshing Smart Column Map…");
     columnMapCache = await buildColumnMap();
+    lastColumnMapBuild = Date.now();
     console.log("✅ Updated Smart Column Map");
   } catch (err) {
     console.warn("Auto-refresh failed:", err);
@@ -329,16 +364,20 @@ async function autoRefreshColumnMap() {
   }
 }
 
-// Auto-refresh when taskpane becomes visible
+// Auto-refresh when taskpane becomes visible (with Excel-ready guard)
 if (Office.addin?.onVisibilityModeChanged) {
   Office.addin.onVisibilityModeChanged(async (args) => {
     if (args.visibilityMode === "Taskpane") {
-      await autoRefreshColumnMap();
+      if (await waitForExcelApi()) {
+        await autoRefreshColumnMap();
+      }
     }
   });
 } else if (Office.addin?.onVisibilityChanged) {
   Office.addin.onVisibilityChanged(async (visible) => {
-    if (visible) await autoRefreshColumnMap();
+    if (visible && (await waitForExcelApi())) {
+      await autoRefreshColumnMap();
+    }
   });
 }
 
@@ -389,12 +428,26 @@ function attachInsertButton(container, formula) {
   btn.onclick = async () => {
     try {
       await safeExcelRun(async (ctx) => {
-        ctx.workbook.getSelectedRange().formulas = [[formula]];
+        const range = ctx.workbook.getSelectedRange();
+        range.load("rowCount,columnCount");
+        await ctx.sync();
+
+        if (range.rowCount !== 1 || range.columnCount !== 1) {
+          const err = new Error("MULTI_CELL_SELECTION");
+          err.code = "MULTI_CELL_SELECTION";
+          throw err;
+        }
+
+        range.formulas = [[formula]];
         await ctx.sync();
       });
       showToast("✅ Inserted");
-    } catch {
-      showToast("⚠️ Select a cell first");
+    } catch (err) {
+      if (err && err.code === "MULTI_CELL_SELECTION") {
+        showToast("⚠️ Select a single cell first");
+      } else {
+        showToast("⚠️ Select a cell first");
+      }
     }
   };
 
@@ -415,6 +468,8 @@ async function initExcelWizPro() {
   let lastFormula = "";
 
   await refreshSheetDropdown(sheetSelect);
+  // Initial map build (forced, but then cached)
+  await autoRefreshColumnMap(true);
   warmUpBackend();
 
   genBtn.addEventListener("click", async () => {
@@ -428,7 +483,7 @@ async function initExcelWizPro() {
     output.textContent = "⏳ Generating…";
 
     // Ensure map is ready
-    if (!columnMapCache) await autoRefreshColumnMap();
+    if (!columnMapCache) await autoRefreshColumnMap(true);
 
     const { version } = getOfficeDiagnostics();
 
