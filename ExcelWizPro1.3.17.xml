@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp
+    xsi:type="TaskPaneApp"
+    xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+    xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+    xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0">
+
+  <!-- ========================================================
+       CORE METADATA
+  ========================================================= -->
+  <Id>e0477cf2-e76d-4327-ae6a-8ac91783b03b</Id>
+  <Version>1.3.17.0</Version>
+  <ProviderName>ExcelWizPro</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+
+  <DisplayName DefaultValue="ExcelWizPro" />
+  <Description DefaultValue="AI-powered Excel formula generator" />
+
+  <IconUrl DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-64.png" />
+  <SupportUrl DefaultValue="https://excelwizpro.github.io/excelwizpro-final/" />
+
+  <!-- ========================================================
+       HOSTS
+  ========================================================= -->
+  <Hosts>
+    <Host Name="Workbook" />
+  </Hosts>
+
+  <!-- ========================================================
+       REQUIREMENTS
+  ========================================================= -->
+  <Requirements>
+    <Sets>
+      <Set Name="ExcelApi" MinVersion="1.1" />
+    </Sets>
+  </Requirements>
+
+  <!-- ========================================================
+       DEFAULT SETTINGS
+  ========================================================= -->
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://excelwizpro.github.io/excelwizpro-final/taskpane.html" />
+  </DefaultSettings>
+
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <!-- ========================================================
+       VERSION OVERRIDES (Required for Ribbon Buttons)
+  ========================================================= -->
+  <VersionOverrides
+      xsi:type="VersionOverridesV1_0"
+      xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides">
+
+    <Hosts>
+      <Host xsi:type="Workbook">
+
+        <!-- Desktop Ribbon UI -->
+        <DesktopFormFactor>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+
+            <OfficeTab id="TabHome">
+
+              <Group id="ExcelWizPro.Group">
+                <Label resid="Button.Label" />
+
+                <Icon>
+                  <bt:Image size="16" resid="Icon16" />
+                  <bt:Image size="32" resid="Icon32" />
+                  <bt:Image size="64" resid="Icon64" />
+                </Icon>
+
+                <Control xsi:type="Button" id="ExcelWizPro.Button">
+                  <Label resid="Button.Label" />
+
+                  <Supertip>
+                    <Title resid="Button.Label" />
+                    <Description resid="Button.Tooltip" />
+                  </Supertip>
+
+                  <Icon>
+                    <bt:Image size="16" resid="Icon16" />
+                    <bt:Image size="32" resid="Icon32" />
+                    <bt:Image size="64" resid="Icon64" />
+                  </Icon>
+
+                  <Action xsi:type="ShowTaskpane">
+                    <SourceLocation resid="Taskpane.Url" />
+                  </Action>
+                </Control>
+
+              </Group>
+
+            </OfficeTab>
+
+          </ExtensionPoint>
+        </DesktopFormFactor>
+
+      </Host>
+    </Hosts>
+
+    <!-- ======================================================
+         RESOURCES
+    ======================================================= -->
+    <Resources>
+
+      <bt:Images>
+        <bt:Image id="Icon16" DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-16.png" />
+        <bt:Image id="Icon32" DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-32.png" />
+        <bt:Image id="Icon64" DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-64.png" />
+      </bt:Images>
+
+      <bt:Urls>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://excelwizpro.github.io/excelwizpro-final/taskpane.html" />
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://excelwizpro.github.io/excelwizpro-final/" />
+      </bt:Urls>
+
+      <bt:ShortStrings>
+        <bt:String id="Button.Label" DefaultValue="ExcelWizPro" />
+        <bt:String id="GetStarted.Title" DefaultValue="ExcelWizPro Add-In" />
+      </bt:ShortStrings>
+
+      <bt:LongStrings>
+        <bt:String id="Button.Tooltip" DefaultValue="Open the ExcelWizPro AI formula assistant." />
+        <bt:String id="GetStarted.Description" DefaultValue="Use ExcelWizPro to create intelligent Excel formulas automatically." />
+      </bt:LongStrings>
+
+    </Resources>
+
+  </VersionOverrides>
+</OfficeApp>
+
