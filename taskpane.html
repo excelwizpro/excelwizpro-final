@@ -1,48 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>ExcelWizPro</title>
-  <link rel="stylesheet" href="taskpane.css" />
+    <meta charset="utf-8" />
+    <title>ExcelWizPro</title>
+
+    <!-- Responsive -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="taskpane.css" />
+
+    <!-- Office.js (required for Excel add-ins) -->
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 </head>
 
 <body>
-  <main class="container">
 
-    <!-- PREMIUM HEADER -->
-    <header class="ewp-header-premium">
-      <div class="ewp-logo-glow">
-        <img src="assets/icon-64.png" alt="ExcelWizPro Logo">
-      </div>
+    <main class="container">
 
-      <h1 class="ewp-title">ExcelWizPro</h1>
-      <p class="ewp-subtitle-premium">AI Formula Generator for Excel</p>
-    </header>
+        <!-- =====================================================
+             PREMIUM HEADER (deep blue, glowing logo)
+        ====================================================== -->
+        <header class="ewp-header-premium">
+            <div class="ewp-logo-glow">
+                <img src="assets/icon-64.png" alt="ExcelWizPro Logo">
+            </div>
+            <h1 class="ewp-title">ExcelWizPro</h1>
+            <p class="ewp-subtitle-premium">AI Formula Generator</p>
+        </header>
 
-    <hr class="ewp-divider">
+        <hr class="ewp-divider">
 
-    <!-- SHEET SELECT -->
-    <label for="sheetSelect">Active Worksheet:</label>
-    <select id="sheetSelect">
-      <option>Loading…</option>
-    </select>
+        <!-- =====================================================
+             ACTIVE SHEET SELECTOR
+        ====================================================== -->
+        <label for="sheetSelect">Active Worksheet:</label>
+        <select id="sheetSelect">
+            <option>Loading…</option>
+        </select>
 
-    <!-- QUERY -->
-    <label for="query">Describe your formula goal:</label>
-    <textarea id="query" placeholder="e.g., sum sales where region = 'east'"></textarea>
+        <!-- =====================================================
+             USER QUERY BOX
+        ====================================================== -->
+        <label for="query">Describe your formula goal:</label>
+        <textarea id="query"
+                  placeholder="e.g., sum sales where region = 'west'">
+        </textarea>
 
-    <!-- BUTTONS -->
-    <button id="generateBtn">Generate Formula</button>
-    <button id="clearBtn">Clear</button>
+        <!-- =====================================================
+             ACTION BUTTONS
+        ====================================================== -->
+        <button id="generateBtn">Generate Formula</button>
+        <button id="clearBtn">Clear</button>
 
-    <!-- OUTPUT -->
-    <label for="output">Result:</label>
-    <div id="output"></div>
+        <!-- =====================================================
+             AI OUTPUT BOX
+        ====================================================== -->
+        <label for="output">Result:</label>
+        <div id="output"></div>
 
-  </main>
+    </main>
 
-  <!-- MUST be loaded for Excel add-ins -->
-  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-  <script src="taskpane.js"></script>
+    <!-- JS (after DOM) -->
+    <script src="taskpane.js"></script>
+
 </body>
 </html>
+
