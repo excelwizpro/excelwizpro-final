@@ -1,6 +1,6 @@
 // ===========================================================
-// ExcelWizPro Taskpane — v12.3.0
-// Advanced Smart Mapping + Auto-Refresh (fully patched)
+// ExcelWizPro Taskpane — v12.3.0 (Patched for Excel Web)
+// Works with universal /generate backend (query + columnMap)
 // ===========================================================
 /* global Office, Excel, fetch */
 
@@ -67,7 +67,6 @@ function timeoutSignal(ms) {
   if (typeof AbortController === "undefined") return undefined;
   const ctrl = new AbortController();
   const id = setTimeout(() => ctrl.abort(), ms);
-  // Clean up timer when aborted
   ctrl.signal.addEventListener("abort", () => clearTimeout(id));
   return ctrl.signal;
 }
@@ -184,20 +183,43 @@ async function warmUpBackend(max = 5) {
 }
 
 // ===========================================================
-// SAFE Excel.run
+// Web-Safe Focus Helper (for Excel on the Web)
 // ===========================================================
-async function safeExcelRun(cb) {
+function forceGridFocus() {
+  return new Promise((resolve) => {
+    Office.context.document.getSelectedDataAsync(
+      Office.CoercionType.Text,
+      () => resolve()
+    );
+  });
+}
+
+// ===========================================================
+// PATCHED: SAFE Excel.run (auto retry + grid focus handling)
+// ===========================================================
+async function safeExcelRun(cb, attempt = 1) {
   try {
+    // Excel Web sometimes loses active-cell focus when clicking in the taskpane.
+    await forceGridFocus();
+    await delay(35);
+
     return await Excel.run(cb);
   } catch (err) {
-    console.warn("Excel.run failed:", err);
+    console.warn(`Excel.run attempt ${attempt} failed:`, err);
+
+    // Retry once — Excel for Web often succeeds on retry
+    if (attempt === 1) {
+      await delay(60);
+      return safeExcelRun(cb, 2);
+    }
+
     showToast("⚠️ Excel not ready");
     throw err;
   }
 }
 
 // ===========================================================
-// ADVANCED SMART COLUMN MAPPING
+// ADVANCED SMART COLUMN MAPPING (frontend builder)
 // ===========================================================
 let columnMapCache = "";
 let lastColumnMapBuild = 0;
@@ -220,7 +242,7 @@ async function buildColumnMap() {
       const visText = vis !== "Visible" ? ` (${vis.toLowerCase()})` : "";
       lines.push(`Sheet: ${sheet.name}${visText}`);
 
-      const used = sheet.getUsedRangeOrNullObject(); // safer: no "false" arg
+      const used = sheet.getUsedRangeOrNullObject();
       used.load("rowCount,columnCount,rowIndex,columnIndex,isNullObject");
       await ctx.sync();
 
@@ -241,18 +263,15 @@ async function buildColumnMap() {
       const dataLastRowIndex = used.rowIndex + used.rowCount - 1;
       const startRow = dataStartRowIndex + 1; // 1-based
 
-      // We cap the data height to avoid absurdly large ranges from ghost formatting
       const maxLastRow = startRow + MAX_DATA_ROWS_PER_COLUMN - 1;
       const lastRowCandidate = dataLastRowIndex + 1; // 1-based
       const lastRow = Math.min(lastRowCandidate, maxLastRow);
 
       if (lastRow < startRow) {
-        // no real data rows after headers
         continue;
       }
 
       for (let col = 0; col < used.columnCount; col++) {
-        // Build stable header with "bottom-most non-empty" logic
         const headerTexts = [];
         for (let r = 0; r < headerRows; r++) {
           const v = headers[r][col];
@@ -260,7 +279,6 @@ async function buildColumnMap() {
             v !== null && v !== "" && v !== undefined ? String(v).trim() : "";
         }
 
-        // primary: last non-empty header cell (closest to data)
         let primary = "";
         for (let r = headerRows - 1; r >= 0; r--) {
           if (headerTexts[r]) {
@@ -270,7 +288,6 @@ async function buildColumnMap() {
         }
         if (!primary) continue;
 
-        // optional: prefix with a higher-level header if present and distinct
         let combined = primary;
         for (let r = 0; r < headerRows - 1; r++) {
           if (headerTexts[r] && headerTexts[r] !== primary) {
@@ -281,7 +298,6 @@ async function buildColumnMap() {
 
         let normalized = normalizeName(combined);
 
-        // avoid collisions by suffixing
         if (globalNameCounts[normalized]) {
           globalNameCounts[normalized] += 1;
           normalized = `${normalized}__${globalNameCounts[normalized]}`;
@@ -316,7 +332,7 @@ async function buildColumnMap() {
       });
       await ctx.sync();
 
-      for (const { table, header, body } of tableMeta) {
+      for (const { table, header } of tableMeta) {
         lines.push(`Table: ${table.name}`);
 
         const headerVals = (header.values && header.values[0]) || [];
@@ -369,10 +385,9 @@ async function buildColumnMap() {
     return lines.join("\n");
   });
 }
-
-// -----------------------------------------------------------
+// ===========================================================
 // AUTO REFRESH COLUMN MAP (on taskpane visibility)
-// -----------------------------------------------------------
+// ===========================================================
 async function autoRefreshColumnMap(force = false) {
   try {
     const now = Date.now();
@@ -432,7 +447,7 @@ async function refreshSheetDropdown(el) {
 }
 
 // ===========================================================
-// BACKEND FORMULA GENERATION
+// BACKEND FORMULA GENERATION (universal engine compatible)
 // ===========================================================
 async function generateFormulaFromBackend(payload) {
   const r = await safeFetch(`${API_BASE}/generate`, {
@@ -448,16 +463,21 @@ async function generateFormulaFromBackend(payload) {
 }
 
 // ===========================================================
-// INSERT FORMULA
+// PATCHED INSERT BUTTON (Excel Web compatible)
 // ===========================================================
 function attachInsertButton(container, formula) {
   container.querySelector(".btn-insert")?.remove();
+
   const btn = document.createElement("button");
   btn.className = "btn-insert";
   btn.textContent = "Insert into Excel";
 
   btn.onclick = async () => {
     try {
+      // Fix: Excel Web sometimes ignores grid selection after clicking taskpane.
+      await forceGridFocus();
+      await delay(40);
+
       await safeExcelRun(async (ctx) => {
         const range = ctx.workbook.getSelectedRange();
         range.load("rowCount,columnCount");
@@ -469,15 +489,18 @@ function attachInsertButton(container, formula) {
           throw err;
         }
 
+        await delay(10); // Web timing fix
         range.formulas = [[formula]];
         await ctx.sync();
       });
+
       showToast("✅ Inserted");
     } catch (err) {
       if (err && err.code === "MULTI_CELL_SELECTION") {
         showToast("⚠️ Select a single cell first");
       } else {
-        showToast("⚠️ Select a cell first");
+        console.warn("Insert failed:", err);
+        showToast("⚠️ Could not insert formula");
       }
     }
   };
@@ -485,7 +508,6 @@ function attachInsertButton(container, formula) {
   container.appendChild(document.createElement("br"));
   container.appendChild(btn);
 }
-
 // ===========================================================
 // MAIN UI
 // ===========================================================
@@ -499,7 +521,7 @@ async function initExcelWizPro() {
   let lastFormula = "";
 
   await refreshSheetDropdown(sheetSelect);
-  // Initial map build (forced, but then cached)
+  // Initial map build (forced, then cached)
   await autoRefreshColumnMap(true);
   warmUpBackend();
 
@@ -564,3 +586,4 @@ async function initExcelWizPro() {
   await initExcelWizPro();
   showToast("✅ ExcelWizPro ready!");
 })();
+
