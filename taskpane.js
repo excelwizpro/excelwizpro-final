@@ -1,23 +1,21 @@
 // ===========================================================
-// ExcelWizPro Taskpane — v12.3.0 (Premium UI Compatible)
-// - Web-safe insertion
-// - Universal backend compatible
-// - Smart column map
-// - Focus safe for Excel Web
+// ExcelWizPro Taskpane — v5.0 Production Stable
+// Premium UI + Universal Engine + Web-Safe Insert
 // ===========================================================
 /* global Office, Excel, fetch */
 
 const API_BASE = "https://excelwizpro-finalapi.onrender.com";
-const VERSION = "12.3.0";
+const VERSION = "5.0";
 
 console.log(`🧠 ExcelWizPro Taskpane v${VERSION} loaded`);
 
+// Enable extended Office error logging (optional)
 if (typeof Office !== "undefined" && Office && Office.config) {
   Office.config = { extendedErrorLogging: true };
 }
 
 // ===========================================================
-// ERROR HANDLING
+// GLOBAL ERROR HANDLERS
 // ===========================================================
 window.addEventListener("error", (e) =>
   console.warn("Window error:", e.message || e.error)
@@ -47,6 +45,7 @@ function showToast(msg) {
   setTimeout(() => t.remove(), 2600);
 }
 
+// Convert numeric column index → Excel column letters
 function columnIndexToLetter(index) {
   let n = index + 1;
   let letters = "";
@@ -66,7 +65,7 @@ function normalizeName(name) {
 }
 
 // ===========================================================
-// HTTP WRAPPER
+// SAFE HTTP REQUESTS
 // ===========================================================
 function timeoutSignal(ms) {
   if (typeof AbortController === "undefined") return undefined;
@@ -87,7 +86,7 @@ async function safeFetch(url, { timeout = 15000, ...opts } = {}) {
 }
 
 // ===========================================================
-// DIAGNOSTICS
+// DIAGNOSTICS UTIL
 // ===========================================================
 function getOfficeDiagnostics() {
   try {
@@ -103,7 +102,7 @@ function getOfficeDiagnostics() {
 }
 
 // ===========================================================
-// BOOTSTRAP
+// OFFICE BOOTSTRAP
 // ===========================================================
 function officeReady() {
   return new Promise((resolve) => {
@@ -128,9 +127,11 @@ function officeReady() {
 
 async function ensureExcelHost(info) {
   if (!info || info.host !== Office.HostType.Excel) {
+    console.warn("❌ Not Excel host:", info && info.host);
     showToast("⚠️ Excel host not detected.");
     return false;
   }
+  console.log("🟢 Excel host OK");
   return true;
 }
 
@@ -151,7 +152,7 @@ async function waitForExcelApi() {
 }
 
 // ===========================================================
-// BACKEND WAKEUP
+// BACKEND WARM-UP
 // ===========================================================
 async function warmUpBackend(max = 5) {
   const status = document.createElement("div");
@@ -162,7 +163,9 @@ async function warmUpBackend(max = 5) {
     fontSize: "0.9rem",
     textAlign: "center"
   });
-  document.querySelector("main.container")?.prepend(status);
+
+  const container = document.querySelector("main.container");
+  if (container) container.prepend(status);
 
   for (let i = 1; i <= max; i++) {
     try {
@@ -175,6 +178,7 @@ async function warmUpBackend(max = 5) {
         return;
       }
     } catch {}
+
     status.textContent = `⏳ Waking backend… (${i}/${max})`;
     status.style.background = "#fff4ce";
     status.style.color = "#976f00";
@@ -187,41 +191,20 @@ async function warmUpBackend(max = 5) {
 }
 
 // ===========================================================
-// EXCEL WEB FOCUS FIX
+// SAFE Excel.run WRAPPER (stabilized)
 // ===========================================================
-function forceGridFocus() {
-  return new Promise((resolve) => {
-    Office.context.document.getSelectedDataAsync(
-      Office.CoercionType.Text,
-      () => resolve()
-    );
-  });
-}
-
-// ===========================================================
-// SAFE Excel.run (patched for Excel Web)
-// ===========================================================
-async function safeExcelRun(cb, attempt = 1) {
+async function safeExcelRun(cb) {
   try {
-    await forceGridFocus();
-    await delay(35);
-
     return await Excel.run(cb);
   } catch (err) {
-    console.warn(`Excel.run attempt ${attempt} failed:`, err);
-
-    if (attempt === 1) {
-      await delay(80);
-      return safeExcelRun(cb, 2);
-    }
-
+    console.warn("Excel.run failed:", err);
     showToast("⚠️ Excel not ready");
     throw err;
   }
 }
 
 // ===========================================================
-// SMART COLUMN MAP BUILDER
+// SMART COLUMN MAP (cached)
 // ===========================================================
 let columnMapCache = "";
 let lastColumnMapBuild = 0;
@@ -251,7 +234,6 @@ async function buildColumnMap() {
       if (used.isNullObject || used.rowCount < 2) continue;
 
       const headerRows = Math.min(3, used.rowCount);
-
       const headerRange = sheet.getRangeByIndexes(
         used.rowIndex,
         used.columnIndex,
@@ -299,7 +281,7 @@ async function buildColumnMap() {
         let normalized = normalizeName(combined);
         if (globalNameCounts[normalized]) {
           globalNameCounts[normalized]++;
-          normalized += `__${globalNameCounts[normalized]}`;
+          normalized = `${normalized}__${globalNameCounts[normalized]}`;
         } else {
           globalNameCounts[normalized] = 1;
         }
@@ -311,110 +293,44 @@ async function buildColumnMap() {
           `${normalized} = '${safeSheetName}'!${colLetter}${startRow}:${colLetter}${lastRow}`
         );
       }
-
-      // TABLES
-      const tables = sheet.tables;
-      tables.load("items/name");
-      await ctx.sync();
-
-      const tableMeta = tables.items.map((table) => {
-        return {
-          table,
-          header: table.getHeaderRowRange()
-        };
-      });
-
-      tableMeta.forEach((m) => m.header.load("values"));
-      await ctx.sync();
-
-      for (const { table, header } of tableMeta) {
-        lines.push(`Table: ${table.name}`);
-
-        const headerVals = header.values[0] || [];
-        headerVals.forEach((h) => {
-          if (!h) return;
-
-          let norm = normalizeName(`${table.name}.${h}`);
-          if (globalNameCounts[norm]) {
-            globalNameCounts[norm]++;
-            norm += `__${globalNameCounts[norm]}`;
-          } else {
-            globalNameCounts[norm] = 1;
-          }
-
-          const structured = `${table.name}[${h}]`;
-          lines.push(`${norm} = ${structured}`);
-        });
-      }
-
-      // PIVOTS
-      const pivots = sheet.pivotTables;
-      pivots.load("items/name");
-      await ctx.sync();
-      pivots.items.forEach((p) => lines.push(`PivotSource: ${p.name}`));
     }
-
-    // NAMED RANGES
-    const names = wb.names;
-    names.load("items/name");
-    await ctx.sync();
-    const meta = [];
-
-    for (const n of names.items) {
-      const r = n.getRange();
-      r.load("address");
-      meta.push({ name: n.name, range: r });
-    }
-    await ctx.sync();
-
-    meta.forEach(({ name, range }) => {
-      lines.push(`NamedRange: ${name}`);
-      let norm = normalizeName(name);
-      if (globalNameCounts[norm]) {
-        globalNameCounts[norm]++;
-        norm += `__${globalNameCounts[norm]}`;
-      } else {
-        globalNameCounts[norm] = 1;
-      }
-      lines.push(`${norm} = ${range.address}`);
-    });
 
     return lines.join("\n");
   });
 }
 
-// ===========================================================
-// SMART MAP AUTO REFRESH
-// ===========================================================
 async function autoRefreshColumnMap(force = false) {
   try {
     const now = Date.now();
     if (!force && columnMapCache && now - lastColumnMapBuild < COLUMN_MAP_TTL_MS) {
+      console.log("🔄 Using cached Smart Column Map");
       return;
     }
-
+    console.log("🔄 Building Smart Column Map…");
     columnMapCache = await buildColumnMap();
     lastColumnMapBuild = Date.now();
+    console.log("✅ Column Map updated");
   } catch (err) {
-    console.warn("Column map refresh failed:", err);
+    console.warn("Column map failed:", err);
     showToast("⚠️ Could not refresh column map");
   }
 }
 
+// Auto-build map when taskpane is shown
 if (Office.addin?.onVisibilityModeChanged) {
   Office.addin.onVisibilityModeChanged(async (args) => {
     if (args.visibilityMode === "Taskpane") {
-      if (await waitForExcelApi()) autoRefreshColumnMap();
+      if (await waitForExcelApi()) await autoRefreshColumnMap();
     }
   });
 } else if (Office.addin?.onVisibilityChanged) {
   Office.addin.onVisibilityChanged(async (visible) => {
-    if (visible && (await waitForExcelApi())) autoRefreshColumnMap();
+    if (visible && (await waitForExcelApi())) await autoRefreshColumnMap();
   });
 }
 
 // ===========================================================
-// SHEET SELECT DROPDOWN
+// SHEET DROPDOWN REFRESH
 // ===========================================================
 async function refreshSheetDropdown(el) {
   return safeExcelRun(async (ctx) => {
@@ -433,7 +349,7 @@ async function refreshSheetDropdown(el) {
 }
 
 // ===========================================================
-// UNIVERSAL BACKEND GENERATION
+// BACKEND FORMULA GENERATION
 // ===========================================================
 async function generateFormulaFromBackend(payload) {
   const r = await safeFetch(`${API_BASE}/generate`, {
@@ -449,7 +365,7 @@ async function generateFormulaFromBackend(payload) {
 }
 
 // ===========================================================
-// PATCHED INSERT BUTTON (Excel Web safe)
+// WEB-SAFE INSERT BUTTON (FINAL FIXED VERSION)
 // ===========================================================
 function attachInsertButton(container, formula) {
   container.querySelector(".btn-insert")?.remove();
@@ -460,32 +376,30 @@ function attachInsertButton(container, formula) {
 
   btn.onclick = async () => {
     try {
-      await Office.context.document.getSelectedDataAsync(
-        Office.CoercionType.Text,
-        () => {}
-      );
+      // Force grid focus (Excel Web)
+      Office.context.document.getSelectedDataAsync(Office.CoercionType.Text, () => {});
+      await delay(40);
 
-      await delay(50);
-
-      await safeExcelRun(async (ctx) => {
+      await Excel.run(async (ctx) => {
         const range = ctx.workbook.getSelectedRange();
-        range.load("rowCount,columnCount");
+        range.load(["rowCount", "columnCount"]);
         await ctx.sync();
 
         if (range.rowCount !== 1 || range.columnCount !== 1) {
-          const err = new Error("MULTI_CELL_SELECTION");
-          err.code = "MULTI_CELL_SELECTION";
-          throw err;
+          throw { code: "MULTI_CELL_SELECTION" };
         }
 
-        await delay(20); 
+        await delay(25); // Web timing stabilization
+
         range.formulas = [[formula]];
         await ctx.sync();
       });
 
-      showToast("✅ Inserted");
+      showToast("✅ Inserted!");
+
     } catch (err) {
-      if (err.code === "MULTI_CELL_SELECTION") {
+      console.warn("Insert error:", err);
+      if (err?.code === "MULTI_CELL_SELECTION") {
         showToast("⚠️ Select a single cell first");
       } else {
         showToast("⚠️ Could not insert formula");
@@ -498,7 +412,7 @@ function attachInsertButton(container, formula) {
 }
 
 // ===========================================================
-// MAIN UI
+// MAIN UI INITIALIZATION
 // ===========================================================
 async function initExcelWizPro() {
   const sheetSelect = getEl("sheetSelect");
@@ -541,8 +455,8 @@ async function initExcelWizPro() {
       output.textContent = formula;
       attachInsertButton(output, formula);
     } catch (err) {
-      output.textContent = "❌ Error (check console)";
-      console.error("Generation error:", err);
+      output.textContent = "❌ Error — see console";
+      console.error("Generation failed:", err);
     }
   });
 
@@ -552,8 +466,10 @@ async function initExcelWizPro() {
   });
 
   window.addEventListener("online", () => {
-    if (lastFormula) showToast("🌐 Back online");
+    if (lastFormula) showToast("🌐 Back online — formula restored");
   });
+
+  console.log("🟢 ExcelWizPro UI ready");
 }
 
 // ===========================================================
@@ -569,5 +485,3 @@ async function initExcelWizPro() {
   await initExcelWizPro();
   showToast("✅ ExcelWizPro ready!");
 })();
-
-
