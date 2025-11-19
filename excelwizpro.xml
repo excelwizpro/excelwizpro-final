@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp
+    xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:type="TaskPaneApp">
+
+  <!-- BASIC INFO -->
+  <Id>e0477cf2-e76d-4327-ae6a-8ac91783b03b</Id>
+  <Version>1.4.0.0</Version>
+  <ProviderName>ExcelWizPro</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+
+  <DisplayName DefaultValue="ExcelWizPro" />
+  <Description DefaultValue="AI-powered Excel formula generator" />
+
+  <IconUrl DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="https://excelwizpro.github.io/excelwizpro-final/assets/icon-64.png" />
+  <SupportUrl DefaultValue="https://excelwizpro.github.io/excelwizpro-final/" />
+
+  <!-- HOSTS -->
+  <Hosts>
+    <Host Name="Workbook" />
+  </Hosts>
+
+  <!-- REQUIREMENTS -->
+  <Requirements>
+    <Sets>
+      <Set Name="ExcelApi" MinVersion="1.1" />
+    </Sets>
+  </Requirements>
+
+  <!-- TASKPANE (NO RIBBON BUTTON) -->
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://excelwizpro.github.io/excelwizpro-final/taskpane.html" />
+  </DefaultSettings>
+
+  <Permissions>ReadWriteDocument</Permissions>
+
+</OfficeApp>
+
