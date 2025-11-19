@@ -1,6 +1,5 @@
 /* ===========================================================
-   ExcelWizPro — Premium Deep Blue UI (v5.1 PRODUCTION)
-   FULL VERSION + Excel Web Scroll Fix + Output Text Fix
+   ExcelWizPro — Premium Deep Blue UI (v4.3 FINAL STABLE)
    =========================================================== */
 
 :root {
@@ -16,128 +15,99 @@
   --border: #d1d1d1;
   --radius: 10px;
   --font: "Segoe UI", system-ui, sans-serif;
-
   --shadow: 0 3px 10px rgba(0,0,0,0.08);
   --shadow-strong: 0 4px 16px rgba(0,0,0,0.18);
 }
 
-/* ===========================================================
-   EXCEL WEB SCROLL FIX — REQUIRED FOR INSERT TO WORK
-   =========================================================== */
-
+/* Allow scrolling in Excel Desktop + Web */
 html, body {
+  overflow: auto !important;
+  height: 100%;
+}
+
+body {
   margin: 0;
   padding: 0;
-  height: 100%;
-  overflow: hidden !important; /* prevent Excel Web focus issues */
-  position: relative;
+  font-family: var(--font);
+  background: linear-gradient(180deg, var(--navy-dark), #0f1e3a, #12274a);
+  color: #eee;
 }
 
-/* MAIN SCROLL AREA — this is where all scrolling now happens */
+/* MAIN CARD */
 main.container {
   max-width: 460px;
-  height: calc(100vh - 20px); /* fill taskpane view */
   margin: 0 auto;
-  margin-top: 1.3rem;
-
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-
-  padding: 1.6rem 1.6rem 2.5rem 1.6rem;
-
+  padding: 1.6rem;
   background: rgba(255,255,255,0.97);
   border-radius: 14px;
-
   box-shadow: var(--shadow-strong);
-  box-sizing: border-box;
+  margin-top: 1.3rem;
 }
 
-/* ===========================================================
-   PREMIUM HEADER (deep blue gradient + glowing logo)
-   =========================================================== */
+/* HEADER */
 .ewp-header-premium {
   text-align: center;
   margin-bottom: 1.1rem;
-  padding: 1.3rem 0 1rem 0;
+  padding: 1.3rem 0 1rem;
   border-radius: 16px;
-
-  background: linear-gradient(
-    145deg,
-    var(--navy-light),
-    var(--navy),
-    var(--navy-dark)
-  );
-
+  background: linear-gradient(145deg, var(--navy-light), var(--navy), var(--navy-dark));
   box-shadow:
     0 4px 16px rgba(0,0,0,0.25),
     inset 0 0 18px rgba(255,255,255,0.06);
 }
 
-/* Glowing circular logo */
+/* Logo Glow */
 .ewp-logo-glow {
   width: 84px;
   height: 84px;
-  margin: 0 auto 0.7rem auto;
-
+  margin: 0 auto 0.7rem;
   border-radius: 50%;
   background: radial-gradient(circle, #ffffff 10%, #bfd1ff 90%);
   padding: 12px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   box-shadow:
     0 0 12px rgba(125,175,255,0.75),
     0 0 26px rgba(80,120,255,0.55),
     inset 0 0 10px rgba(255,255,255,0.9);
 }
 
-/* Logo img */
 .ewp-logo-glow img {
   width: 58px;
   height: 58px;
 }
 
-/* Title + subtitle */
 .ewp-title {
-  margin: 0.2rem 0;
-  font-size: 1.6rem;
-  font-weight: 700;
-  letter-spacing: -0.3px;
+  margin: 0;
+  font-size: 1.65rem;
   color: white;
+  font-weight: 700;
 }
 
 .ewp-subtitle-premium {
-  margin-top: -0.2rem;
-  font-size: 0.96rem;
+  margin-top: -0.25rem;
+  font-size: 0.95rem;
   color: #d3e0ff;
-  letter-spacing: 0.4px;
 }
 
 /* Divider */
 .ewp-divider {
-  opacity: 0.18;
   border: none;
   border-bottom: 1px solid #444;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
+  opacity: 0.25;
+  margin: 1rem 0;
 }
 
-/* ===========================================================
-   LABELS
-   =========================================================== */
+/* Labels */
 label {
+  display: block;
   margin-top: 0.8rem;
-  margin-bottom: 0.2rem;
-  display: inline-block;
   font-weight: 600;
   color: #333;
 }
 
-/* ===========================================================
-   INPUTS
-   =========================================================== */
+/* Inputs */
 select,
 textarea {
   width: 100%;
@@ -145,10 +115,10 @@ textarea {
   font-size: 0.96rem;
   border-radius: var(--radius);
   border: 1px solid #bbb;
-  padding: 0.65rem 0.7rem;
+  padding: 0.65rem;
   background: #fff;
-  transition: 0.2s border, 0.2s box-shadow;
   color: #222;
+  transition: 0.2s border, 0.2s box-shadow;
 }
 
 select:focus,
@@ -157,16 +127,12 @@ textarea:focus {
   box-shadow: 0 0 0 3px var(--primary-light);
 }
 
-/* Textarea */
 textarea {
   min-height: 80px;
   resize: vertical;
-  line-height: 1.38;
 }
 
-/* ===========================================================
-   BUTTONS
-   =========================================================== */
+/* Buttons */
 button {
   font-family: var(--font);
   border: none;
@@ -177,70 +143,56 @@ button {
   transition: 0.2s background, 0.15s transform;
 }
 
-/* Generate */
 #generateBtn {
   background: var(--primary);
   color: white;
   width: 100%;
-  margin-top: 0.9rem;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+  margin-top: 1rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 #generateBtn:hover { background: var(--primary-hover); }
 #generateBtn:active { transform: scale(0.97); }
 
-/* Clear */
 #clearBtn {
   background: #f3f3f3;
-  color: #333;
   border: 1px solid #ccc;
   margin-top: 0.5rem;
+  color: #333;
 }
 #clearBtn:hover { background: #e9e9e9; }
 
-/* Insert */
+/* Insert Button */
 .btn-insert {
   background: var(--success);
-  color: white;
-  margin-top: 0.6rem;
+  color: white !important;
+  margin-top: 0.65rem;
   padding: 0.6rem 1rem;
+  border-radius: var(--radius);
+  cursor: pointer;
 }
-.btn-insert:hover { background: #0c660c; }
-.btn-insert:active { transform: scale(0.97); }
-
-/* ===========================================================
-   OUTPUT BOX — ALWAYS DARK TEXT (bulletproof)
-   =========================================================== */
-#output,
-#output *,
-#output span,
-#output pre,
-#output code {
-  color: #111 !important;
-  -webkit-text-fill-color: #111 !important;
-  background: #fafafa !important;
+.btn-insert:hover {
+  background: #0c660c;
+}
+.btn-insert:active {
+  transform: scale(0.97);
 }
 
+/* OUTPUT FIX — ALWAYS BLACK + VISIBLE */
 #output {
   margin-top: 0.7rem;
   border: 1px solid #ccc !important;
   border-radius: var(--radius);
   padding: 0.75rem;
+  background: #fafafa !important;
+  color: #111 !important;
   font-family: Consolas, monospace;
-  font-size: 0.94rem;
   min-height: 70px;
   white-space: pre-wrap;
   line-height: 1.5;
-  box-shadow: inset 0 0 4px rgba(0,0,0,0.06);
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.05);
 }
 
-/* Optional highlight */
-#output strong { color: #000; }
-#output .fn { color: #0050c8; font-weight: 600; }
-#output .range { color: #444; }
-
-/* ===========================================================
-   TOAST (notifications)
-   =========================================================== */
+/* Toast Notification */
 .toast {
   position: fixed;
   bottom: 1.2rem;
@@ -250,7 +202,6 @@ button {
   color: white;
   padding: 0.65rem 1.3rem;
   border-radius: 999px;
-  font-weight: 600;
   box-shadow: var(--shadow-strong);
   animation: toastFade 2.5s ease forwards;
   z-index: 9999;
