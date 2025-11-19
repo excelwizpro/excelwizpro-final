@@ -1,69 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <title>ExcelWizPro</title>
+  <meta charset="utf-8" />
+  <title>ExcelWizPro</title>
 
-    <!-- Responsive -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- UI Styles -->
+  <link rel="stylesheet" href="taskpane.css" />
 
-    <!-- CSS -->
-    <link rel="stylesheet" href="taskpane.css" />
+  <!-- Office.js (must be first script) -->
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 
-    <!-- Office.js (required for Excel add-ins) -->
-    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <style>
+    /* Ensures Excel Web does NOT crop the UI */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: auto !important;
+    }
+  </style>
 </head>
 
 <body>
+  <main class="container">
 
-    <main class="container">
+    <!-- PREMIUM HEADER -->
+    <header class="ewp-header-premium">
+      <div class="ewp-logo-glow">
+        <img src="assets/icon-64.png" alt="ExcelWizPro Logo">
+      </div>
+      <h1 class="ewp-title">ExcelWizPro</h1>
+      <p class="ewp-subtitle-premium">AI Formula Generator</p>
+    </header>
 
-        <!-- =====================================================
-             PREMIUM HEADER (deep blue, glowing logo)
-        ====================================================== -->
-        <header class="ewp-header-premium">
-            <div class="ewp-logo-glow">
-                <img src="assets/icon-64.png" alt="ExcelWizPro Logo">
-            </div>
-            <h1 class="ewp-title">ExcelWizPro</h1>
-            <p class="ewp-subtitle-premium">AI Formula Generator</p>
-        </header>
+    <hr class="ewp-divider">
 
-        <hr class="ewp-divider">
+    <!-- SHEET SELECTOR -->
+    <label for="sheetSelect">Active Sheet:</label>
+    <select id="sheetSelect">
+      <option>Loading…</option>
+    </select>
 
-        <!-- =====================================================
-             ACTIVE SHEET SELECTOR
-        ====================================================== -->
-        <label for="sheetSelect">Active Worksheet:</label>
-        <select id="sheetSelect">
-            <option>Loading…</option>
-        </select>
+    <!-- QUERY -->
+    <label for="query">Describe your formula:</label>
+    <textarea id="query" placeholder="e.g., sum sales where region = 'east'"></textarea>
 
-        <!-- =====================================================
-             USER QUERY BOX
-        ====================================================== -->
-        <label for="query">Describe your formula goal:</label>
-        <textarea id="query"
-                  placeholder="e.g., sum sales where region = 'west'">
-        </textarea>
+    <!-- BUTTONS -->
+    <button id="generateBtn">Generate Formula</button>
+    <button id="clearBtn">Clear</button>
 
-        <!-- =====================================================
-             ACTION BUTTONS
-        ====================================================== -->
-        <button id="generateBtn">Generate Formula</button>
-        <button id="clearBtn">Clear</button>
+    <!-- OUTPUT -->
+    <label for="output">Result:</label>
+    <div id="output"></div>
 
-        <!-- =====================================================
-             AI OUTPUT BOX
-        ====================================================== -->
-        <label for="output">Result:</label>
-        <div id="output"></div>
+  </main>
 
-    </main>
-
-    <!-- JS (after DOM) -->
-    <script src="taskpane.js"></script>
-
+  <!-- MAIN LOGIC -->
+  <script src="taskpane.js"></script>
 </body>
 </html>
 
