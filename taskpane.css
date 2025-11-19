@@ -1,6 +1,6 @@
 /* ===========================================================
-   ExcelWizPro — Premium Deep Blue UI (v5.0 PRODUCTION)
-   Fully merged, Excel Web safe, output visibility fixed
+   ExcelWizPro — Premium Deep Blue UI (v5.1 PRODUCTION)
+   FULL VERSION + Excel Web Scroll Fix + Output Text Fix
    =========================================================== */
 
 :root {
@@ -22,44 +22,38 @@
 }
 
 /* ===========================================================
-   EXCEL WEB SAFE — Prevent scroll issues breaking selection
+   EXCEL WEB SCROLL FIX — REQUIRED FOR INSERT TO WORK
    =========================================================== */
+
 html, body {
-  overflow: hidden !important;
-  position: relative !important;
-}
-
-/* Ensure main container doesn’t block Office focus */
-main.container {
-  overflow: visible !important;
-}
-
-/* ===========================================================
-   BACKGROUND (Deep gradient)
-   =========================================================== */
-body {
   margin: 0;
   padding: 0;
-  font-family: var(--font);
-  background: linear-gradient(180deg, var(--navy-dark), #0f1e3a, #12274a);
-  color: #eee;
+  height: 100%;
+  overflow: hidden !important; /* prevent Excel Web focus issues */
+  position: relative;
 }
 
-/* ===========================================================
-   MAIN CARD
-   =========================================================== */
+/* MAIN SCROLL AREA — this is where all scrolling now happens */
 main.container {
   max-width: 460px;
+  height: calc(100vh - 20px); /* fill taskpane view */
   margin: 0 auto;
-  padding: 1.6rem 1.6rem;
+  margin-top: 1.3rem;
+
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+
+  padding: 1.6rem 1.6rem 2.5rem 1.6rem;
+
   background: rgba(255,255,255,0.97);
   border-radius: 14px;
+
   box-shadow: var(--shadow-strong);
-  margin-top: 1.3rem;
+  box-sizing: border-box;
 }
 
 /* ===========================================================
-   PREMIUM HEADER (glossy, glowing)
+   PREMIUM HEADER (deep blue gradient + glowing logo)
    =========================================================== */
 .ewp-header-premium {
   text-align: center;
@@ -79,11 +73,12 @@ main.container {
     inset 0 0 18px rgba(255,255,255,0.06);
 }
 
-/* GLOW LOGO */
+/* Glowing circular logo */
 .ewp-logo-glow {
   width: 84px;
   height: 84px;
   margin: 0 auto 0.7rem auto;
+
   border-radius: 50%;
   background: radial-gradient(circle, #ffffff 10%, #bfd1ff 90%);
   padding: 12px;
@@ -98,6 +93,7 @@ main.container {
     inset 0 0 10px rgba(255,255,255,0.9);
 }
 
+/* Logo img */
 .ewp-logo-glow img {
   width: 58px;
   height: 58px;
@@ -212,7 +208,7 @@ button {
 .btn-insert:active { transform: scale(0.97); }
 
 /* ===========================================================
-   BULLETPROOF FORMULA OUTPUT FIX
+   OUTPUT BOX — ALWAYS DARK TEXT (bulletproof)
    =========================================================== */
 #output,
 #output *,
@@ -221,10 +217,9 @@ button {
 #output code {
   color: #111 !important;
   -webkit-text-fill-color: #111 !important;
-  background-color: #fafafa !important;
+  background: #fafafa !important;
 }
 
-/* Output layout */
 #output {
   margin-top: 0.7rem;
   border: 1px solid #ccc !important;
@@ -238,13 +233,13 @@ button {
   box-shadow: inset 0 0 4px rgba(0,0,0,0.06);
 }
 
-/* Optional highlighting */
+/* Optional highlight */
 #output strong { color: #000; }
 #output .fn { color: #0050c8; font-weight: 600; }
 #output .range { color: #444; }
 
 /* ===========================================================
-   TOAST NOTIFICATIONS
+   TOAST (notifications)
    =========================================================== */
 .toast {
   position: fixed;
