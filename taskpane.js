@@ -48,80 +48,83 @@ async function buildColumnMap() {
     sheets.load("items/name");
     await ctx.sync();
 
+    console.log("✨ Building column map…");
+
     const lines = [];
     const nameCounts = Object.create(null);
 
     for (const sheet of sheets.items) {
+      console.log(`\n===== SHEET: ${sheet.name} =====`);
       lines.push(`Sheet: ${sheet.name}`);
 
       const used = sheet.getUsedRangeOrNullObject();
-      used.load("rowCount,columnCount,rowIndex,columnIndex,isNullObject");
+      used.load("rowCount,columnCount,rowIndex,columnIndex,address,isNullObject");
       await ctx.sync();
 
-      if (used.isNullObject || used.rowCount < 2) continue;
+      if (used.isNullObject) {
+        console.warn("❗ Used range is NULL");
+        continue;
+      }
 
+      console.log("Used range:", {
+        rowIndex: used.rowIndex,
+        colIndex: used.columnIndex,
+        rows: used.rowCount,
+        cols: used.columnCount,
+        address: used.address
+      });
+
+      if (used.rowCount < 2 || used.columnCount < 1) {
+        console.warn("❗ Not enough rows or columns in used range");
+        continue;
+      }
+
+      // headers
       const headerRows = Math.min(3, used.rowCount);
-      const headers = sheet
-        .getRangeByIndexes(
-          used.rowIndex,
-          used.columnIndex,
-          headerRows,
-          used.columnCount
-        );
-      headers.load("values");
+      const headerRange = sheet.getRangeByIndexes(
+        used.rowIndex,
+        used.columnIndex,
+        headerRows,
+        used.columnCount
+      );
+      headerRange.load("values,address");
       await ctx.sync();
 
-      const hv = headers.values;
+      console.log("Header values:", headerRange.values);
 
       const startRow = used.rowIndex + headerRows + 1;
       const lastRow = used.rowIndex + used.rowCount;
 
       for (let c = 0; c < used.columnCount; c++) {
-        let names = [];
+        const colValues = [];
         for (let r = 0; r < headerRows; r++) {
-          const t = String(hv[r][c] ?? "").trim();
-          names.push(t);
+          colValues.push(String(headerRange.values[r][c] ?? "").trim());
         }
-        names = names.reverse().filter((x) => x);
+
+        const names = colValues.reverse().filter(n => n !== "");
         if (!names.length) continue;
 
+        console.log(`Column ${c}:`, names);
+
         let label = names[0];
-        if (names.length > 1) {
-          label = `${names[1]} - ${label}`;
-        }
+        if (names.length > 1) label = `${names[1]} - ${label}`;
 
         let norm = label.toLowerCase().replace(/\s+/g, "_");
         if (nameCounts[norm]) {
           nameCounts[norm]++;
           norm += "__" + nameCounts[norm];
-        } else {
-          nameCounts[norm] = 1;
-        }
+        } else nameCounts[norm] = 1;
 
         const xlCol = indexToLetter(used.columnIndex + c);
-        lines.push(`${norm}='${sheet.name}'!${xlCol}${startRow}:${xlCol}${lastRow}`);
-      }
 
-      // tables
-      const tables = sheet.tables;
-      tables.load("items/name");
-      await ctx.sync();
+        const mapEntry = `${norm}='${sheet.name}'!${xlCol}${startRow}:${xlCol}${lastRow}`;
+        console.log(" → Map:", mapEntry);
 
-      for (const t of tables.items) {
-        lines.push(`Table: ${t.name}`);
-        const h = t.getHeaderRowRange();
-        h.load("values");
-        await ctx.sync();
-
-        const cols = h.values[0];
-        for (const col of cols) {
-          if (!col) continue;
-          const key = `${t.name}.${col}`.toLowerCase().replace(/\s+/g, "_");
-          lines.push(`${key}=${t.name}[${col}]`);
-        }
+        lines.push(mapEntry);
       }
     }
 
+    console.log("FINAL COLUMN MAP:\n", lines.join("\n"));
     return lines.join("\n");
   });
 }
@@ -267,3 +270,4 @@ async function initUI() {
 Office.onReady(() => {
   initUI().then(() => toast("✅ ExcelWizPro Ready"));
 });
+
